@@ -19,6 +19,7 @@ import com.example.auth.dto.response.UserResponse;
 import com.example.auth.service.UserService;
 import com.example.common.dto.BaseQueryRequest;
 import com.example.common.dto.PageResponse;
+import com.example.common.dto.UserQueryRequest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,7 @@ public class UserController {
     }
 
     @GetMapping("/filter")
-    public PageResponse<UserResponse> getFiltered(@ModelAttribute("req") BaseQueryRequest req) {
+    public PageResponse<UserResponse> getFiltered(@ModelAttribute("req") UserQueryRequest req) {
         return userService.getFiltered(req);
     }
 
@@ -65,8 +66,13 @@ public class UserController {
         return userService.update(id, request);
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable UUID id) {
-        userService.delete(id);
+    @DeleteMapping("/lock/{id}")
+    public void lock(@PathVariable UUID id) {
+        userService.Lock(id);
+    }
+
+    @DeleteMapping("/unlock/{id}")
+    public void unLock(@PathVariable UUID id) {
+        userService.unLock(id);
     }
 }

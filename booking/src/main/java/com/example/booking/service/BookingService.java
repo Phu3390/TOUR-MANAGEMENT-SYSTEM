@@ -214,7 +214,6 @@ public class BookingService {
     @Scheduled(fixedRate = 300000)
     @Transactional
     public void expireBooking() {
-        System.out.println(">>> RUNNING " + LocalDateTime.now());
         LocalDateTime now = LocalDateTime.now();
         List<Booking> bookings = repository.findAllByStatusAndExpiredAtBefore(
                 BookingStatus.PENDING, now);

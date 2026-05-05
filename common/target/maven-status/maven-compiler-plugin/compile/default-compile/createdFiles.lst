@@ -4,8 +4,10 @@ com\example\common\mapper\PageMapper.class
 com\example\common\enums\BookingStatus.class
 com\example\common\enums\PriceType.class
 com\example\common\enums\PaymentMethod.class
+com\example\common\dto\UserQueryRequest.class
 com\example\common\enums\TourType.class
 com\example\common\exception\AppException.class
+com\example\common\dto\RoleQueryRequest.class
 com\example\common\utils\SpecificationBuilder.class
 com\example\common\enums\PaymentStatus.class
 com\example\common\utils\PageableUtil.class

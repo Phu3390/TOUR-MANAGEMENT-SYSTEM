@@ -3,6 +3,7 @@ package com.example.auth.mapper;
 import java.util.List;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import com.example.auth.dto.request.RolePermissionRequest;
@@ -15,6 +16,7 @@ public interface RolePermissionMapper {
 
     List<RolePermission> toEntityList(List<RolePermissionRequest> request);
 
+    @Mapping(target = "role", ignore = true)
     RolePermissionResponse toResponse(RolePermission entity);
 
     List<RolePermissionResponse> toResponseList(List<RolePermission> entity);

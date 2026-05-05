@@ -52,6 +52,12 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.filestack</groupId>
+			<artifactId>filestack-java</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+
 				<!-- MapStruct -->
 		<dependency>
 			<groupId>org.mapstruct</groupId>

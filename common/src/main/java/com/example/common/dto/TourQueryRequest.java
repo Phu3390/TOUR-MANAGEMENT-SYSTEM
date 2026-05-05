@@ -2,11 +2,13 @@ package com.example.common.dto;
 
 import java.math.BigDecimal;
 
+import com.example.common.enums.TourStatus;
+
 import lombok.Data;
 
 @Data
 public class TourQueryRequest extends BaseQueryRequest {
-
+    private TourStatus status;
     private String location;
     private String duration;
     private Double minRating;

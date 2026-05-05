@@ -1,0 +1,7 @@
+export enum TourType {
+  ADVENTURE='ADVENTURE',
+  RELAX='RELAX',
+  FAMILY='FAMILY',
+  LUXURY='LUXURY',
+  CULTURE='CULTURE',
+}

@@ -16,6 +16,7 @@ import com.example.common.exception.AppException;
 import com.example.common.exception.ErrorCode;
 import com.example.common.mapper.PageMapper;
 import com.example.common.utils.PageableUtil;
+import com.example.common.utils.SpecificationBuilder;
 import com.example.tours.dto.request.CreateTourRequest;
 import com.example.tours.dto.request.TourDetailRequest;
 import com.example.tours.dto.request.TourRequest;
@@ -56,66 +57,89 @@ public class TourService {
     }
 
     public PageResponse<TourResponse> getFiltered(TourQueryRequest req) {
+
         Pageable pageable = PageableUtil.build(req);
 
         Specification<Tour> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+
+            SpecificationBuilder<Tour> builder = new SpecificationBuilder<>();
 
             // 🔍 keyword
-            if (req.getKeyword() != null && !req.getKeyword().isBlank()) {
-                String like = "%" + req.getKeyword().toLowerCase() + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("title")), like),
-                        cb.like(cb.lower(root.get("shortDesc")), like),
-                        cb.like(cb.lower(root.get("longDesc")), like)));
-            }
+            builder.keyword(
+                    root,
+                    cb,
+                    req.getKeyword(),
+                    "title",
+                    "shortDesc",
+                    "longDesc");
 
             // 📍 location
-            if (req.getLocation() != null && !req.getLocation().isBlank()) {
-                predicates.add(cb.equal(root.get("location"), req.getLocation()));
-            }
+            builder.equal(
+                    root,
+                    cb,
+                    "location",
+                    req.getLocation());
 
             // ⏱ duration
-            if (req.getDuration() != null && !req.getDuration().isBlank()) {
-                predicates.add(cb.equal(root.get("duration"), req.getDuration()));
-            }
+            builder.equal(
+                    root,
+                    cb,
+                    "duration",
+                    req.getDuration());
 
             // ⭐ rating
-            if (req.getMinRating() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(
-                        root.get("rating"), req.getMinRating()));
-            }
+            builder.ge(
+                    root,
+                    cb,
+                    "rating",
+                    req.getMinRating());
 
-            if (req.getMaxRating() != null) {
-                predicates.add(cb.lessThanOrEqualTo(
-                        root.get("rating"), req.getMaxRating()));
-            }
+            builder.le(
+                    root,
+                    cb,
+                    "rating",
+                    req.getMaxRating());
 
-            // 💰 price (join)
-            Join<Tour, TourDetail> detailJoin = null;
-            Join<TourDetail, TourPrice> priceJoin = null;
+            // 🔒 status từ request
+            builder.equal(
+                    root,
+                    cb,
+                    "status",
+                    req.getStatus());
 
+            List<Predicate> extraPredicates = new ArrayList<>();
+
+            // 💰 price
             if (req.getMinPrice() != null || req.getMaxPrice() != null) {
-                detailJoin = root.join("tourDetails", JoinType.LEFT);
-                priceJoin = detailJoin.join("tourPrices", JoinType.LEFT);
+
+                Join<Tour, TourDetail> detailJoin = root.join("tourDetails", JoinType.LEFT);
+                Join<TourDetail, TourPrice> priceJoin = detailJoin.join("tourPrices", JoinType.LEFT);
 
                 if (req.getMinPrice() != null) {
-                    predicates.add(cb.greaterThanOrEqualTo(
-                            priceJoin.get("price"), req.getMinPrice()));
+                    extraPredicates.add(
+                            cb.greaterThanOrEqualTo(
+                                    priceJoin.get("price"),
+                                    req.getMinPrice()));
                 }
 
                 if (req.getMaxPrice() != null) {
-                    predicates.add(cb.lessThanOrEqualTo(
-                            priceJoin.get("price"), req.getMaxPrice()));
+                    extraPredicates.add(
+                            cb.lessThanOrEqualTo(
+                                    priceJoin.get("price"),
+                                    req.getMaxPrice()));
                 }
 
                 query.distinct(true);
             }
 
-            // 🔒 status
-            // predicates.add(cb.equal(root.get("status"), TourStatus.ACTIVE));
+            Predicate basePredicate = builder.build(cb);
 
-            return cb.and(predicates.toArray(new Predicate[0]));
+            if (!extraPredicates.isEmpty()) {
+                extraPredicates.add(basePredicate);
+                return cb.and(extraPredicates.toArray(new Predicate[0]));
+            }
+
+            return basePredicate;
         };
 
         Page<Tour> pageData = tourRepository.findAll(spec, pageable);
@@ -127,7 +151,6 @@ public class TourService {
     @Transactional
     public TourResponse createFullTour(CreateTourRequest request) {
         Tour tour = create(request.getTour());
-
         List<TourDetail> details = new ArrayList<>();
         if (request.getTourDetails() != null) {
             for (TourDetailRequest detailReq : request.getTourDetails()) {
@@ -161,6 +184,8 @@ public class TourService {
 
     public Tour create(TourRequest request) {
         Tour tour = tourMapper.toEntity(request);
+        tour.setRating(0.0);
+        tour.setTotalReviews(0);
         if (tourRepository.existsBySlug(tour.getSlug())) {
             throw new AppException(ErrorCode.SLUG_ALREADY_EXISTS);
         }

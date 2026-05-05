@@ -38,5 +38,4 @@ public class TourDetailRequest {
 
     private List<TourPriceRequest> prices;
     private List<TourItineraryRequest> itineraries;
-
 }

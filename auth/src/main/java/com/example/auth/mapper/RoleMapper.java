@@ -6,16 +6,21 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 
 import com.example.auth.dto.request.RoleRequest;
+import com.example.auth.dto.response.PageRoleResponse;
 import com.example.auth.dto.response.RoleResponse;
 import com.example.auth.entity.Role;
 
-@Mapper(componentModel = "spring")  
+@Mapper(componentModel = "spring",uses = {RolePermissionMapper.class})  
 public interface RoleMapper {
     Role toEntity(RoleRequest request);
 
     RoleResponse toResponse(Role entity);
 
     List<RoleResponse> tolList(List<Role> entity);
+
+    PageRoleResponse toPageRoleResponse(Role entity);
+
+    List<PageRoleResponse> toPageRoleResponseList(List<Role> entity);
 
     Role toEntityResponse(RoleResponse response);
 

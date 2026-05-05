@@ -16,6 +16,7 @@ import com.example.auth.entity.Role;
 import com.example.auth.entity.User;
 import com.example.common.dto.BaseQueryRequest;
 import com.example.common.dto.PageResponse;
+import com.example.common.dto.UserQueryRequest;
 import com.example.common.enums.Status;
 import com.example.auth.mapper.UserMapper;
 import com.example.auth.repository.RoleRepository;
@@ -38,21 +39,26 @@ public class UserService {
     RoleRepository roleRepository;
     PasswordEncoder passwordEncoder;
 
-    public PageResponse<UserResponse> getFiltered(BaseQueryRequest req) {
-                Pageable pageable = PageableUtil.build(req);
+    public PageResponse<UserResponse> getFiltered(UserQueryRequest req) {
 
-                Specification<User> spec = (root, query, cb) -> {
-                        SpecificationBuilder<User> builder = new SpecificationBuilder<>();
-                        builder.keyword(root, cb, req.getKeyword(), "email","fullName");
-                        return cb.and(
-                                        builder.build(cb),
-                                        cb.equal(root.get("status"), Status.ACTIVE));
-                };
-                Page<User> pageData = userRepository.findAll(spec, pageable);
+        Pageable pageable = PageableUtil.build(req);
 
-                return PageMapper.toPageResponse(
-                                pageData.map(userMapper::toResponse));
-        }
+        Specification<User> spec = (root, query, cb) -> {
+
+            SpecificationBuilder<User> builder = new SpecificationBuilder<>();
+
+            builder.keyword(root, cb, req.getKeyword(), "email", "fullName")
+                    .equal(root, cb, "status", req.getStatus())
+                    .joinEqualIgnoreCase(root, cb, "role", "name", req.getRole());
+
+            return builder.build(cb);
+        };
+
+        Page<User> pageData = userRepository.findAll(spec, pageable);
+
+        return PageMapper.toPageResponse(
+                pageData.map(userMapper::toResponse));
+    }
 
     public List<UserResponse> getAll() {
         return userMapper.toList(userRepository.findByStatus(Status.ACTIVE));
@@ -91,15 +97,21 @@ public class UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXITS));
         userMapper.updateUserEntity(user, request);
         user.setRole(role);
-        if(request.getPassword() != null && !request.getPassword().isEmpty()) {
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         return userMapper.toResponse(userRepository.save(user));
     }
 
-    public void delete(UUID id) {
+    public void Lock(UUID id) {
         User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_EXITS));
         user.setStatus(Status.INACTIVE);
+        userRepository.save(user);
+    }
+
+    public void unLock(UUID id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_EXITS));
+        user.setStatus(Status.ACTIVE);
         userRepository.save(user);
     }
 }

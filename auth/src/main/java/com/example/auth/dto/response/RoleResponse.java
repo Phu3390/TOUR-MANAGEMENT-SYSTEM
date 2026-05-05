@@ -1,11 +1,8 @@
 package com.example.auth.dto.response;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
-import com.example.auth.entity.Role;
-import com.example.auth.entity.RolePermission;
 import com.example.common.enums.Status;
 
 import lombok.AccessLevel;
@@ -24,5 +21,5 @@ public class RoleResponse {
     UUID id;
     String name;
     Status status;
-    List<RolePermission> rolePermissions;
+    List<RolePermissionResponse> rolePermissions;
 }

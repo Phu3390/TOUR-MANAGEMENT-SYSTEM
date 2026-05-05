@@ -24,14 +24,9 @@ import lombok.RequiredArgsConstructor;
 public class RolePermissionController {
     private final RolePermissionService rolePermissionService;
 
-    @GetMapping("/{id}")
-    public List<RolePermissionResponse> getByRoleId(@PathVariable UUID id) {
-        return rolePermissionService.getById(id);
-    }
-
     @PostMapping
     public List<RolePermissionResponse> create(
-            @RequestBody RoleAndRolePermissionRequest rolePermissionRequests) {
+        @RequestBody RoleAndRolePermissionRequest rolePermissionRequests) {
         return rolePermissionService.create(rolePermissionRequests);
     }
 

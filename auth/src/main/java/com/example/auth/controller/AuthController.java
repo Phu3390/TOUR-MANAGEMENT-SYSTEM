@@ -33,10 +33,10 @@ public class AuthController {
         return authService.signup(request);
     }
 
-    @PostMapping("/introspect")
-    public IntrospectResponse introspect(@RequestBody IntrospectRequset request) throws JOSEException, ParseException {
-        return authService.introspect(request);
-    }
+    // @PostMapping("/introspect")
+    // public IntrospectResponse introspect(@RequestBody IntrospectRequset request) throws JOSEException, ParseException {
+    //     return authService.introspect(request);
+    // }
 
     // @PostMapping("/logout")
     // public void logout(@RequestBody LogOutRequest request) throws JOSEException, ParseException {

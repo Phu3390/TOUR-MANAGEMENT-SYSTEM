@@ -35,7 +35,6 @@ public class TourController {
         return tourService.getFiltered(req);
     }
 
-
     @GetMapping
     public List<TourResponse> getAll() {
         return tourService.getAll();

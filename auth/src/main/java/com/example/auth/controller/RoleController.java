@@ -14,10 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.auth.dto.request.RoleRequest;
+import com.example.auth.dto.response.PageRoleResponse;
 import com.example.auth.dto.response.RoleResponse;
 import com.example.auth.service.RoleService;
-import com.example.common.dto.BaseQueryRequest;
 import com.example.common.dto.PageResponse;
+import com.example.common.dto.RoleQueryRequest;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,7 +29,7 @@ public class RoleController {
     private final RoleService roleService;
 
     @GetMapping("/filter")
-    public PageResponse<RoleResponse> getFiltered(@ModelAttribute("req") BaseQueryRequest req) {
+    public PageResponse<PageRoleResponse> getFiltered(@ModelAttribute("req") RoleQueryRequest req) {
         return roleService.getFiltered(req);
     }
 
@@ -47,9 +48,14 @@ public class RoleController {
         return roleService.update(id, request);
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable UUID id) {
-        roleService.delete(id);
+    @DeleteMapping("/lock/{id}")
+    public void lock(@PathVariable UUID id) {
+        roleService.lock(id);
+    }
+
+    @DeleteMapping("/unlock/{id}")
+    public void unLock(@PathVariable UUID id) {
+        roleService.unLock(id);
     }
 
     @GetMapping("/{id}")

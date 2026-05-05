@@ -16,6 +16,7 @@ import com.example.tours.mapper.TourDetailMapper;
 import com.example.tours.repository.TourDetailRepository;
 import com.example.tours.repository.TourRepository;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
@@ -26,6 +27,8 @@ public class TourDetailService {
     TourDetailMapper mapper;
     TourDetailRepository repository;
     TourRepository tourRepository;
+    TourPriceService tourPriceService;
+    TourItineraryService tourItineraryService;
 
     public List<TourDetailResponse> getAll() {
         return mapper.toResponseList(repository.findAll());
@@ -52,6 +55,7 @@ public class TourDetailService {
         return mapper.toResponseList(repository.saveAll(lits));
     }
 
+    @Transactional
     public TourDetailResponse createOne(UUID tourId, TourDetailRequest request) {
         Tour tour = tourRepository.findById(tourId).orElseThrow(() -> new AppException(ErrorCode.Tour_NOT_FOUND));
         if (request.getCapacity() < request.getRemainingSeats()) {
@@ -62,7 +66,14 @@ public class TourDetailService {
         }
         TourDetail tourDetail = mapper.toEntity(request);
         tourDetail.setTour(tour);
-        return mapper.toResponse(repository.save(tourDetail));
+        tourDetail = repository.save(tourDetail);
+        if (request.getPrices() != null) {
+            tourPriceService.createList(tourDetail.getId(), request.getPrices());
+        }
+        if (request.getItineraries() != null) {
+            tourItineraryService.createList(tourDetail.getId(), request.getItineraries());
+        }
+        return mapper.toResponse(tourDetail);
     }
 
     public TourDetailResponse updateOne(UUID id, TourDetailRequest request) {
@@ -94,7 +105,7 @@ public class TourDetailService {
         if (quantity < 0) {
             throw new AppException(ErrorCode.REMAINING_SEATS_CANNOT_BE_NEGATIVE);
         }
-        if( tourDetail.getRemainingSeats() + quantity > tourDetail.getCapacity()) {
+        if (tourDetail.getRemainingSeats() + quantity > tourDetail.getCapacity()) {
             throw new AppException(ErrorCode.REMAINING_SEATS_CANNOT_EXCEED_CAPACITY);
         }
         tourDetail.setRemainingSeats(tourDetail.getRemainingSeats() + quantity);

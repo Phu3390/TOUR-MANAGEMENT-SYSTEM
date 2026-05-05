@@ -40,9 +40,6 @@ public class RolePermissionService {
     RoleService roleService;
     RoleMapper roleMapper;
 
-    public List<RolePermissionResponse> getById(UUID id) {
-        return rolePermissionMapper.toResponseList(rolePermissionRepository.findByRole_Id(id));
-    }
 
     @Transactional
     public List<RolePermissionResponse> create(RoleAndRolePermissionRequest requests) {

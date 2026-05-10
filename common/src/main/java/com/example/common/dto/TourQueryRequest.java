@@ -3,6 +3,7 @@ package com.example.common.dto;
 import java.math.BigDecimal;
 
 import com.example.common.enums.TourStatus;
+import com.example.common.enums.TourType;
 
 import lombok.Data;
 
@@ -13,7 +14,7 @@ public class TourQueryRequest extends BaseQueryRequest {
     private String duration;
     private Double minRating;
     private Double maxRating;
-
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
+    private TourType tourType;
 }

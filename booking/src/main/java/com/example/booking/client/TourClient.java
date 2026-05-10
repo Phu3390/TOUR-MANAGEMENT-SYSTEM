@@ -33,4 +33,7 @@ public interface TourClient {
 
     @PutMapping("/api/tours/tourdetail/updaterollbackstock/{id}")
     void updateRollBackStock(@PathVariable UUID id, @RequestBody Integer quantity, @RequestHeader("Authorization") String token);
+
+    @GetMapping("api/tours/tour/title/{tourid}")
+    ApiResponse<String> getTourTitle(@PathVariable UUID tourid);
 }

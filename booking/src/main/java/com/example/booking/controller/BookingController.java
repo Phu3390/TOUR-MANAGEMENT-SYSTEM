@@ -10,11 +10,16 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.booking.dto.request.CreateBookingRequest;
 import com.example.booking.dto.response.BookingResponse;
 import com.example.booking.dto.response.TourPriceTypeResponse;
+import com.example.booking.service.BookingPageService;
 import com.example.booking.service.BookingService;
+import com.example.common.dto.BookingQueryRequest;
+import com.example.common.dto.PageResponse;
+import com.example.common.dto.TourQueryRequest;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,6 +29,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequiredArgsConstructor
 public class BookingController {
     private final BookingService bookingService;
+    private final BookingPageService bookingPageService;
+
+    @GetMapping("/filter")
+    public PageResponse<BookingResponse> getFilter(@ModelAttribute("req") BookingQueryRequest req) {
+        return bookingPageService.getAllBookings(req);
+    }
 
     @GetMapping("/me")
     public List<BookingResponse> getMe() {
@@ -45,9 +56,23 @@ public class BookingController {
         return bookingService.getTourPriceTypes(tourDetailId);
     }
 
+    @PostMapping("/confirm/{bookingId}")
+    public BookingResponse confirmBooking(@PathVariable UUID bookingId) {
+        return bookingService.confirmBooking(bookingId);
+    }
+
+    @PostMapping("/verify/{paymentId}")
+    public BookingResponse verifyPayment(@PathVariable UUID paymentId) {
+        return bookingService.verifyPayment(paymentId);
+    }
+
+    @PostMapping("/cancel/{paymentId}")
+    public void cancelBooking(@PathVariable UUID paymentId) {
+        bookingService.cancelBooking(paymentId);
+    }
+
     @PostMapping
     public BookingResponse createBooking(@RequestBody @Valid CreateBookingRequest request) {
         return bookingService.createBooking(request);
     }
-
 }

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useLocation } from 'react-router-dom'
-import Header from '../compoments/admin/Header'
-import Sidebar from '../compoments/admin/Sidebar'
+import Header from '../compoments/Header'
+import Sidebar from '../compoments/Sidebar'
 
 export default function AdminLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)

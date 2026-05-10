@@ -88,9 +88,21 @@ public class BookingService {
     }
 
     public BookingResponse getBookingById(UUID bookingId) {
+
         Booking booking = repository.findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
-        return mapper.toResponse(booking);
+
+        BookingResponse response = mapper.toResponse(booking);
+
+        try {
+            String tourName = tourClient
+                    .getTourTitle(booking.getTourId())
+                    .getData();
+            response.setTourName(tourName);
+        } catch (Exception e) {
+            response.setTourName(null);
+        }
+        return response;
     }
 
     private BigDecimal calculateDiscount(BigDecimal total, Voucher voucher) {
@@ -237,26 +249,93 @@ public class BookingService {
         repository.saveAll(bookings);
     }
 
+    @Transactional
+    public BookingResponse confirmBooking(UUID bookingId) {
+
+        Booking booking = repository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new AppException(ErrorCode.INVALID_BOOKING_STATUS);
+        }
+
+        Payment payment = paymentRepository
+                .findFirstByBookingIdOrderByCreatedAtDesc(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        if (payment.getMethod() != PaymentMethod.CASH) {
+            throw new AppException(ErrorCode.INVALID_PAYMENT_METHOD);
+        }
+
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            throw new AppException(ErrorCode.PAYMENT_ALREADY_VERIFIED);
+        }
+
+        if (payment.getStatus() == PaymentStatus.FAILED) {
+            throw new AppException(ErrorCode.INVALID_PAYMENT_STATUS);
+        }
+        payment.setStatus(PaymentStatus.SUCCESS);
+
+        payment.setPaidAt(LocalDateTime.now());
+        payment.setAmount(booking.getTotalPrice());
+
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        paymentRepository.save(payment);
+        Booking savedBooking = repository.save(booking);
+
+        return mapper.toResponse(savedBooking);
+    }
+
+    @Transactional
+    public BookingResponse verifyPayment(UUID paymentId) {
+
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        Booking booking = payment.getBooking();
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new AppException(ErrorCode.INVALID_BOOKING_STATUS);
+        }
+
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            throw new AppException(ErrorCode.PAYMENT_ALREADY_VERIFIED);
+        }
+
+        payment.setStatus(PaymentStatus.SUCCESS);
+
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        paymentRepository.save(payment);
+
+        return mapper.toResponse(
+                repository.save(booking));
+    }
+
+    @Transactional
     public void cancelBooking(UUID bookingId) {
         Booking booking = repository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
         booking.setStatus(BookingStatus.CANCELLED);
         paymentService.cancelExpiredPayments(bookingId);
+        int totalPeople = booking.getItems().stream()
+                .mapToInt(BookingItem::getQuantity)
+                .sum();
+        updateRollBackStock(booking.getTourDetailId(), totalPeople);
         repository.save(booking);
     }
 
-    
-
     public BookingResponse updateBooking(UUID bookingId, BookingRequest request) {
         Booking booking = repository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
         if (!booking.getUserId().equals(SecurityUtils.getCurrentUserId())) {
-            throw new RuntimeException("Unauthorized");
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new RuntimeException("Cannot update booking");
+            throw new AppException(ErrorCode.INVALID_BOOKING_STATUS);
         }
         booking.setContactFullname(request.getContactFullname());
         booking.setContactEmail(request.getContactEmail());

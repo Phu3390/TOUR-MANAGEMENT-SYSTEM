@@ -7,7 +7,7 @@ export async function createListTourItinerary(tourdetail_id: string, payload: To
   return res.data as FormListTourItineraryResponse
 }
 
-export async function updateOneTourItinerar(tourdetail_id: string, payload: TourItineraryRequest): Promise<FormTourItineraryResponse> {
-  const res = await api.put(`/tours/touritinerary/${tourdetail_id}`, payload)
+export async function updateOneTourItinerary(itinerary_id: string, payload: TourItineraryRequest): Promise<FormTourItineraryResponse> {
+  const res = await api.put(`/tours/touritinerary/${itinerary_id}`, payload)
   return res.data as FormTourItineraryResponse
 }

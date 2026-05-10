@@ -6,7 +6,7 @@ export async function createListTourPrice(tourdetail_id: string, payload: TourPr
   return res.data as FormListTourPriceResponse
 }
 
-export async function updateOneTourPrice(tourdetail_id: string, payload: TourPriceRequest): Promise<FormTourPriceResponse> {
-  const res = await api.put(`/tours/tourprice/${tourdetail_id}`, payload)
+export async function updateOneTourPrice(tourprice_id: string, payload: TourPriceRequest): Promise<FormTourPriceResponse> {
+  const res = await api.put(`/tours/tourprice/${tourprice_id}`, payload)
   return res.data as FormTourPriceResponse
 }

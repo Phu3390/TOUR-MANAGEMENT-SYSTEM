@@ -3,12 +3,14 @@ import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import type { RootState } from '../../../store'
 import { fetchTours, setKeyword, setPageNumber, setStatusFilter } from '../../../store/tour/slice'
+import { editStatus } from '../../../api/tour/tour.api'
 import TourHeader from '../../../compoments/admin/tour/TourHeader'
 import TourFilters, { type TourFilterState } from '../../../compoments/admin/tour/TourFilters'
 import TourList from '../../../compoments/admin/tour/TourList'
 import TourPagination from '../../../compoments/admin/tour/TourPagination'
 import { useAppDispatch, useAppSelector } from '../../../store/hooks'
 import type { TourResponse } from '../../../types/tour/tour.type'
+import { TourStatus } from '../../../types/enums/TourStatus.enum'
 
 export default function Tour() {
   const dispatch = useAppDispatch()
@@ -18,6 +20,7 @@ export default function Tour() {
   )
 
   const [searchInput, setSearchInput] = useState('')
+  const [updatingTourId, setUpdatingTourId] = useState<string | null>(null)
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -71,8 +74,25 @@ export default function Tour() {
     navigate(`/admin/tours/${tour.id}/edit`)
   }
 
-  const handleDelete = (tour: TourResponse) => {
-    console.log('Delete tour:', tour)
+  const handleStatusToggle = async (tour: TourResponse, nextStatus: TourStatus) => {
+    try {
+      setUpdatingTourId(tour.id)
+      await editStatus(tour.id, nextStatus)
+      await dispatch(
+        fetchTours({
+          keyword: keyword || undefined,
+          status: statusFilter !== 'ALL' ? statusFilter : undefined,
+          pageNumber,
+          size,
+        }),
+      ).unwrap()
+      toast.success(`Đã cập nhật trạng thái tour`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Cập nhật trạng thái thất bại'
+      toast.error(message)
+    } finally {
+      setUpdatingTourId(null)
+    }
   }
 
   const handleResetFilters = () => {
@@ -94,7 +114,14 @@ export default function Tour() {
         onReset={handleResetFilters}
       />
 
-      <TourList tours={tours} loading={loading} onDetail={handleDetail} onEdit={handleEdit} onDelete={handleDelete} />
+      <TourList
+        tours={tours}
+        loading={loading}
+        onDetail={handleDetail}
+        onEdit={handleEdit}
+        onStatusToggle={handleStatusToggle}
+        updatingTourId={updatingTourId}
+      />
 
       <TourPagination
         current={pageNumber + 1}

@@ -9,7 +9,6 @@ import UserTable from '../../compoments/admin/user/UserTable'
 import type { CreateUserFormValues, UpdateUserFormValues } from '../../schema/userSchema'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { createUser, fetchUsers, setKeyword, setPageNumber, setStatusFilter, setRoleFilter, lockUser, unlockUser, updateUser } from '../../store/user/slice'
-import { fetchRoles } from '../../store/role/slice'
 import type { UpdateUserRequest, UserRequest } from '../../types/auth/user.type'
 
 export default function UserManagement() {
@@ -17,31 +16,11 @@ export default function UserManagement() {
   const { users, loading, submitting, pageNumber, totalPages, size, keyword, statusFilter, roleFilter } = useAppSelector(
     (state) => state.user,
   )
-  const { roles } = useAppSelector((state) => state.role)
 
   const [searchInput, setSearchInput] = useState(keyword)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
-
-  // Fetch roles on mount
-  useEffect(() => {
-    dispatch(fetchRoles())
-  }, [dispatch])
-
-  const filterRoleOptions = useMemo(() => {
-    return roles.map((role) => ({
-      value: role.name,
-      label: role.name,
-    }))
-  }, [roles])
-
-  const formRoleOptions = useMemo(() => {
-    return roles.map((role) => ({
-      value: role.id,
-      label: role.name,
-    }))
-  }, [roles])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -184,7 +163,6 @@ export default function UserManagement() {
         keyword={searchInput}
         status={statusFilter}
         role={roleFilter}
-        roleOptions={filterRoleOptions}
         onKeywordChange={setSearchInput}
         onStatusChange={(status) => dispatch(setStatusFilter(status))}
         onRoleChange={(role) => dispatch(setRoleFilter(role))}
@@ -199,7 +177,6 @@ export default function UserManagement() {
         open={isCreateModalOpen}
         loading={submitting}
         mode="create"
-        roleOptions={formRoleOptions}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateUser}
       />
@@ -213,11 +190,10 @@ export default function UserManagement() {
             ? {
                 fullName: editingUser.fullName,
                 email: editingUser.email,
-                role_id: editingUser.role?.id || '',
+                role_id: editingUser.role?.name || 'USER',
               }
             : undefined
         }
-        roleOptions={formRoleOptions}
         onClose={() => {
           setIsEditModalOpen(false)
           setEditingUserId(null)

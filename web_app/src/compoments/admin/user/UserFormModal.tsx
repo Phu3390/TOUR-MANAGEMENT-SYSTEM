@@ -2,11 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createUserSchema, type CreateUserFormValues, type UpdateUserFormValues, updateUserSchema } from '../../../schema/userSchema'
-
-type RoleOption = {
-  value: string
-  label: string
-}
+import { STATIC_USER_ROLE_OPTIONS } from '../../../utils/userRoles'
 
 type UserFormModalProps = {
   open: boolean
@@ -17,7 +13,6 @@ type UserFormModalProps = {
     email: string
     role_id: string
   }
-  roleOptions: RoleOption[]
   onClose: () => void
   onSubmit: (values: CreateUserFormValues | UpdateUserFormValues) => void
 }
@@ -30,7 +25,6 @@ export default function UserFormModal({
   loading,
   mode = 'create',
   initialValues,
-  roleOptions,
   onClose,
   onSubmit,
 }: UserFormModalProps) {
@@ -45,7 +39,7 @@ export default function UserFormModal({
       fullName: initialValues?.fullName || '',
       email: initialValues?.email || '',
       password: '',
-      role_id: initialValues?.role_id || roleOptions[0]?.value || '',
+      role_id: initialValues?.role_id || 'USER',
     },
   })
 
@@ -56,9 +50,9 @@ export default function UserFormModal({
       fullName: initialValues?.fullName || '',
       email: initialValues?.email || '',
       password: '',
-      role_id: initialValues?.role_id || roleOptions[0]?.value || '',
+      role_id: initialValues?.role_id || 'USER',
     })
-  }, [open, reset, roleOptions, initialValues])
+  }, [open, reset, initialValues])
 
   if (!open) return null
 
@@ -111,7 +105,7 @@ export default function UserFormModal({
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Vai trò</label>
             <select {...register('role_id')} className={inputClass}>
-              {roleOptions.map((role) => (
+              {STATIC_USER_ROLE_OPTIONS.map((role) => (
                 <option key={role.value} value={role.value}>
                   {role.label}
                 </option>

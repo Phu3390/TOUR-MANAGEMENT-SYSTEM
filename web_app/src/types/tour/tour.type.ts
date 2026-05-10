@@ -47,6 +47,7 @@ export interface TourQueryRequest extends BaseQueryRequest {
   status?: TourStatus; 
   location?: string;
   duration?: string;
+  tourType?: TourType;
   minRating?: number;
   maxRating?: number;
   minPrice?: number;

@@ -1,6 +1,7 @@
 package com.example.booking.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,7 +12,11 @@ import com.example.common.enums.PaymentStatus;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
+    Optional<Payment> findFirstByBookingIdOrderByCreatedAtDesc(UUID bookingId);
+
     List<Payment> findByBookingId(UUID bookingId);
+
     List<Payment> findByBookingIdAndStatus(UUID bookingId, PaymentStatus status);
+
     boolean existsByBookingIdAndStatus(UUID bookingId, PaymentStatus status);
 }

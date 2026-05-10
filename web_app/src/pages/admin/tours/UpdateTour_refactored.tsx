@@ -5,25 +5,26 @@ import { getById, update as updateTour, uploadImage } from '../../../api/tour/to
 import { createOneTourDetailAndListPriceAndListItinerary, updateOneTourDetail } from '../../../api/tour/tourdetail.api'
 import type { TourResponse } from '../../../types/tour/tour.type'
 import type { TourStatus } from '../../../types/enums/TourStatus.enum'
-import { TourType } from '../../../types/enums/TourType.enum'
-import { TourDetailStatus } from '../../../types/enums/TourDetailStatus.enum'
-import { PriceType } from '../../../types/enums/PriceType.enum'
 import TourDetailHeader from '../../../compoments/admin/tour/tour-detail/TourDetailHeader'
-import TourDetailDepartureCard from '../../../compoments/admin/tour/tour-detail/TourDetailDepartureCard'
 import TourDetailPricingCard from '../../../compoments/admin/tour/tour-detail/TourDetailPricingCard'
 import TourDetailItineraryCard from '../../../compoments/admin/tour/tour-detail/TourDetailItineraryCard'
 import TourDetailActions from '../../../compoments/admin/tour/tour-detail/TourDetailActions'
 import TourEditPricingCard from '../../../compoments/admin/tour/tour-detail/TourEditPricingCard'
+import TourAddPricingCard from '../../../compoments/admin/tour/tour-detail/TourAddPricingCard'
 import TourEditItineraryCard from '../../../compoments/admin/tour/tour-detail/TourEditItineraryCard'
+import TourAddItineraryCard from '../../../compoments/admin/tour/tour-detail/TourAddItineraryCard'
 import { createListTourPrice } from '../../../api/tour/tourprice.api'
-import { createListTourItinerary } from '../../../api/tour/touritinerary.api'
+import { updateOneTourPrice } from '../../../api/tour/tourprice.api'
+import { createListTourItinerary, updateOneTourItinerary } from '../../../api/tour/touritinerary.api'
 import TourCreateBasicInfoCard from '../../../compoments/admin/tour/tour-create/TourCreateBasicInfoCard'
 import TourCreateMediaCard from '../../../compoments/admin/tour/tour-create/TourCreateMediaCard'
 import TourCreateClassificationCard from '../../../compoments/admin/tour/tour-create/TourCreateClassificationCard'
-import TourCreatePricingCard from '../../../compoments/admin/tour/tour-create/TourCreatePricingCard'
-import TourCreateItineraryCard from '../../../compoments/admin/tour/tour-create/TourCreateItineraryCard'
 import TourCreateStepper from '../../../compoments/admin/tour/tour-create/TourCreateStepper'
-import type { TourDetailRequest } from '../../../types/tour/tourdetail.type'
+import TourUpdateDepartureSection from '../../../compoments/admin/tour/tour-detail/TourUpdateDepartureSection'
+import TourUpdateNewDetailSection from '../../../compoments/admin/tour/tour-detail/TourUpdateNewDetailSection'
+import { TourDetailDraftSchema } from '../../../schema/tourCreateSchema'
+import { TourUpdateDetailFormSchema, TourUpdateTourInfoSchema } from '../../../schema/tourUpdateSchema'
+import { buildCreateDetailPayload, buildTourPayload, buildUpdateDetailPayload, createEmptyNewDetailDraft, slugify, type UpdateDetailFormState, type UpdateTourFormState } from './tourUpdate.helpers'
 import type { TourDetailDraft } from '../../../types/tour/tour-create.type'
 
 const updateSteps = [
@@ -33,28 +34,6 @@ const updateSteps = [
   { label: 'Lịch trình', description: 'Chỉnh sửa kế hoạch theo ngày' },
 ]
 
-interface UpdateTourFormState {
-  title: string
-  slug: string
-  location: string
-  duration: string
-  shortDesc: string
-  longDesc: string
-  imageUrl: string
-  gallery: string[]
-  tourType: TourType
-  status: TourStatus
-}
-
-interface UpdateDetailFormState {
-  capacity: number
-  remainingSeats: number
-  startDay: string
-  endDay: string
-  startLocation: string
-  status: string
-}
-
 const getErrorMessage = (error: unknown) => {
   if (typeof error === 'string') return error
   if (error instanceof Error) return error.message
@@ -63,30 +42,6 @@ const getErrorMessage = (error: unknown) => {
     if (typeof message === 'string') return message
   }
   return 'Cập nhật tour thất bại'
-}
-
-const createEmptyNewDetailDraft = (startLocation = ''): TourDetailDraft => ({
-  startDay: '',
-  endDay: '',
-  startLocation,
-  capacity: '30',
-  remainingSeats: '30',
-  status: TourDetailStatus.ACTIVE,
-  prices: [
-    { priceType: PriceType.ADULT, price: '' },
-    { priceType: PriceType.CHILD, price: '' },
-  ],
-  itineraries: [{ dayNumber: '1', title: '', content: '' }],
-})
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
 }
 
 export default function UpdateTourPage() {
@@ -104,7 +59,7 @@ export default function UpdateTourPage() {
     longDesc: '',
     imageUrl: '',
     gallery: [],
-    tourType: TourType.ADVENTURE,
+    tourType: 'ADVENTURE' as UpdateTourFormState['tourType'],
     status: 'DRAFT' as TourStatus,
   })
   const [detailFormState, setDetailFormState] = useState<UpdateDetailFormState>({
@@ -124,13 +79,18 @@ export default function UpdateTourPage() {
   const [error, setError] = useState<string | null>(null)
   const coverInputRef = useRef<HTMLInputElement | null>(null)
   const galleryInputRef = useRef<HTMLInputElement | null>(null)
-  const [editingPrices, setEditingPrices] = useState(false)
-  const [editingItineraries, setEditingItineraries] = useState(false)
+  const [pricingFormMode, setPricingFormMode] = useState<'edit' | 'add' | null>(null)
+  const [itineraryFormMode, setItineraryFormMode] = useState<'edit' | 'add' | null>(null)
   const [editingDetail, setEditingDetail] = useState(false)
   const [showNewDetailForm, setShowNewDetailForm] = useState(false)
 
   const activeDetail = tour && tour.tourDetails ? tour.tourDetails[activeDetailIndex] : null
-  const hasActiveDetail = activeDetailIndex >= 0 && activeDetail
+
+  const resetDetailEditors = () => {
+    setEditingDetail(false)
+    setPricingFormMode(null)
+    setItineraryFormMode(null)
+  }
 
   const fetchTourDetail = useCallback(async () => {
     if (!id) {
@@ -205,9 +165,6 @@ export default function UpdateTourPage() {
 
   const handleFooterBack = () => {
     if (currentStep > 1) {
-      if (currentStep === 3 || currentStep === 4) {
-        setActiveDetailIndex(-1)
-      }
       setCurrentStep((current) => Math.max(current - 1, 1))
       return
     }
@@ -242,15 +199,7 @@ export default function UpdateTourPage() {
     setActiveDetailIndex((current) => {
       const nextIndex = current === index ? -1 : index
 
-      if (nextIndex === -1) {
-        setEditingDetail(false)
-        setEditingPrices(false)
-        setEditingItineraries(false)
-      } else {
-        setEditingDetail(false)
-        setEditingPrices(false)
-        setEditingItineraries(false)
-      }
+      resetDetailEditors()
 
       return nextIndex
     })
@@ -320,20 +269,15 @@ export default function UpdateTourPage() {
   const saveTourInfo = async () => {
     if (!id) return
 
+    const validation = TourUpdateTourInfoSchema.safeParse(formState)
+    if (!validation.success) {
+      toast.error(validation.error.issues[0]?.message || 'Dữ liệu không hợp lệ')
+      return
+    }
+
     try {
       setIsSaving(true)
-      const response = await updateTour(id, {
-        title: formState.title.trim(),
-        slug: formState.slug.trim(),
-        location: formState.location.trim(),
-        duration: formState.duration.trim(),
-        shortDesc: formState.shortDesc.trim(),
-        longDesc: formState.longDesc.trim(),
-        imageUrl: formState.imageUrl.trim(),
-        gallery: formState.gallery.map((item) => item.trim()).filter(Boolean),
-        tourType: formState.tourType,
-        status: formState.status,
-      })
+      const response = await updateTour(id, buildTourPayload(validation.data))
 
       if (response.code !== 200) {
         throw new Error(response.message || 'Cập nhật tour thất bại')
@@ -351,18 +295,17 @@ export default function UpdateTourPage() {
   const updateTourDetail = async () => {
     if (!id || !tour || !tour.tourDetails?.[activeDetailIndex]) return
 
+    const validation = TourUpdateDetailFormSchema.safeParse(detailFormState)
+    if (!validation.success) {
+      toast.error(validation.error.issues[0]?.message || 'Dữ liệu không hợp lệ')
+      return
+    }
+
     try {
       setIsSaving(true)
       const detail = tour.tourDetails[activeDetailIndex]
 
-      const response = await updateOneTourDetail(detail.id, {
-        capacity: detailFormState.capacity,
-        remainingSeats: detailFormState.remainingSeats,
-        startDay: new Date(detailFormState.startDay),
-        endDay: new Date(detailFormState.endDay),
-        startLocation: detailFormState.startLocation,
-        status: detailFormState.status as TourDetailStatus,
-      })
+      const response = await updateOneTourDetail(detail.id, buildUpdateDetailPayload(validation.data))
 
       if (response.code !== 200) {
         throw new Error(response.message || 'Cập nhật lịch khởi hành thất bại')
@@ -380,25 +323,15 @@ export default function UpdateTourPage() {
   const createTourDetail = async () => {
     if (!id || !tour) return
 
+    const validation = TourDetailDraftSchema.safeParse(newDetailDraft)
+    if (!validation.success) {
+      toast.error(validation.error.issues[0]?.message || 'Dữ liệu không hợp lệ')
+      return
+    }
+
     try {
       setIsSaving(true)
-      const payload: TourDetailRequest = {
-        capacity: Number(newDetailDraft.capacity) || 30,
-        remainingSeats: Number(newDetailDraft.remainingSeats) || 30,
-        startDay: new Date(newDetailDraft.startDay),
-        endDay: new Date(newDetailDraft.endDay),
-        startLocation: newDetailDraft.startLocation.trim() || tour.location,
-        status: newDetailDraft.status,
-        prices: newDetailDraft.prices.map((item) => ({
-          priceType: item.priceType,
-          price: Number(item.price) || 0,
-        })),
-        itineraries: newDetailDraft.itineraries.map((item) => ({
-          dayNumber: Number(item.dayNumber) || 1,
-          title: item.title.trim(),
-          content: item.content.trim(),
-        })),
-      }
+      const payload = buildCreateDetailPayload(validation.data, tour.location)
       const response = await createOneTourDetailAndListPriceAndListItinerary(id, payload)
 
       if (response.code !== 200) {
@@ -485,254 +418,63 @@ export default function UpdateTourPage() {
         {/* Step 2: Tour Detail Selection & Edit */}
         {currentStep === 2 && tour.tourDetails && tour.tourDetails.length > 0 && (
           <div className="space-y-5">
-            <TourDetailDepartureCard
+            <TourUpdateDepartureSection
               details={tour.tourDetails}
               activeIndex={activeDetailIndex}
+              editing={editingDetail}
+              isSaving={isSaving}
+              value={detailFormState}
               onSelect={handleSelectDetail}
+              onToggleEditing={() => setEditingDetail((current) => !current)}
+              onChange={updateDetailFormState}
+              onSave={updateTourDetail}
             />
 
-            {hasActiveDetail && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-semibold text-slate-900">Lịch Khởi Hành</h2>
-                    <p className="text-sm text-slate-500">Chọn lịch khởi hành để xem hoặc chỉnh sửa.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setEditingDetail((current) => !current)}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    {editingDetail ? 'Ẩn chỉnh sửa' : 'Chỉnh sửa'}
-                  </button>
-                </div>
-
-                {editingDetail ? (
-                  <div className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Sức chứa
-                        </label>
-                        <input
-                          type="number"
-                          value={detailFormState.capacity}
-                          onChange={(e) => updateDetailFormState({ capacity: parseInt(e.target.value) || 0 })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          min="1"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Chỗ còn lại
-                        </label>
-                        <input
-                          type="number"
-                          value={detailFormState.remainingSeats}
-                          onChange={(e) => updateDetailFormState({ remainingSeats: parseInt(e.target.value) || 0 })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          min="0"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Ngày bắt đầu
-                        </label>
-                        <input
-                          type="date"
-                          value={detailFormState.startDay}
-                          onChange={(e) => updateDetailFormState({ startDay: e.target.value })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Ngày kết thúc
-                        </label>
-                        <input
-                          type="date"
-                          value={detailFormState.endDay}
-                          onChange={(e) => updateDetailFormState({ endDay: e.target.value })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Địa điểm khởi hành
-                      </label>
-                      <input
-                        type="text"
-                        value={detailFormState.startLocation}
-                        onChange={(e) => updateDetailFormState({ startLocation: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        placeholder="Địa điểm khởi hành..."
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Trạng thái
-                      </label>
-                      <select
-                        value={detailFormState.status}
-                        onChange={(e) => updateDetailFormState({ status: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                      >
-                        <option value="ACTIVE">Hoạt động</option>
-                        <option value="FULL">Đã kín</option>
-                        <option value="CANCELLED">Đã hủy</option>
-                      </select>
-                    </div>
-
-                    <button
-                      onClick={updateTourDetail}
-                      disabled={isSaving}
-                      className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
-                    >
-                      {isSaving ? 'Đang cập nhật...' : 'Cập nhật lịch khởi hành'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                    <p className="text-sm text-slate-600">Đang xem lịch khởi hành đã chọn. Bấm "Chỉnh sửa" để mở form cập nhật.</p>
-                  </div>
-                )}
-              </section>
-            )}
-
-            <section className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/30 p-5 shadow-sm">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900">Tạo Lịch Khởi Hành Mới</h2>
-                  <p className="text-sm text-slate-500">Thêm một đợt khởi hành mới cho tour này.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowNewDetailForm((current) => !current)}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                >
-                  {showNewDetailForm ? 'Ẩn form' : '+ Thêm lịch khởi hành mới'}
-                </button>
-              </div>
-
-              {showNewDetailForm && (
-                <div className="space-y-5">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-slate-900">Thông tin lịch khởi hành mới</h3>
-                      <p className="text-sm text-slate-500">Nhập ngày, chỗ ngồi và điểm khởi hành.</p>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Ngày bắt đầu</label>
-                        <input
-                          type="date"
-                          value={newDetailDraft.startDay}
-                          onChange={(event) => updateNewDetailDraft({ startDay: event.target.value })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Ngày kết thúc</label>
-                        <input
-                          type="date"
-                          value={newDetailDraft.endDay}
-                          onChange={(event) => updateNewDetailDraft({ endDay: event.target.value })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Sức chứa</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={newDetailDraft.capacity}
-                          onChange={(event) => updateNewDetailDraft({ capacity: event.target.value })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Chỗ còn lại</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={newDetailDraft.remainingSeats}
-                          onChange={(event) => updateNewDetailDraft({ remainingSeats: event.target.value })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Điểm khởi hành</label>
-                        <input
-                          type="text"
-                          value={newDetailDraft.startLocation}
-                          onChange={(event) => updateNewDetailDraft({ startLocation: event.target.value })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                          placeholder="Hà Nội"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Trạng thái</label>
-                        <select
-                          value={newDetailDraft.status}
-                          onChange={(event) => updateNewDetailDraft({ status: event.target.value as TourDetailStatus })}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        >
-                          <option value="ACTIVE">Hoạt động</option>
-                          <option value="FULL">Đã kín</option>
-                          <option value="CANCELLED">Đã hủy</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <TourCreatePricingCard
-                    detail={newDetailDraft}
-                    onChange={(prices) => updateNewDetailDraft({ prices })}
-                  />
-                  <TourCreateItineraryCard
-                    detail={newDetailDraft}
-                    onChange={(itineraries) => updateNewDetailDraft({ itineraries })}
-                  />
-
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={createTourDetail}
-                      disabled={isSaving}
-                      className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
-                    >
-                      {isSaving ? 'Đang tạo...' : 'Tạo lịch khởi hành'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
+            <TourUpdateNewDetailSection
+              location={tour.location}
+              detail={newDetailDraft}
+              showForm={showNewDetailForm}
+              isSaving={isSaving}
+              onToggle={() => setShowNewDetailForm((current) => !current)}
+              onChange={updateNewDetailDraft}
+              onCreate={createTourDetail}
+            />
           </div>
         )}
 
         {/* Step 3: Pricing */}
-        {currentStep === 3 && hasActiveDetail && (
+        {currentStep === 3 && activeDetail && (
           <div className="space-y-5">
-            {!editingPrices && <TourDetailPricingCard detail={activeDetail} />}
-            {editingPrices && (
+            <TourDetailPricingCard detail={activeDetail} />
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setPricingFormMode((current) => (current === 'edit' ? null : 'edit'))}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {pricingFormMode === 'edit' ? 'Ẩn form sửa giá' : 'Chỉnh sửa bảng giá'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPricingFormMode((current) => (current === 'add' ? null : 'add'))}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {pricingFormMode === 'add' ? 'Ẩn form thêm giá' : 'Thêm bảng giá'}
+              </button>
+            </div>
+
+            {pricingFormMode === 'edit' && (
               <TourEditPricingCard
+                key={`${activeDetail.id}-${String(activeDetail.updatedAt)}`}
                 detail={activeDetail}
-                onCancel={() => setEditingPrices(false)}
-                onSave={async (prices) => {
+                onUpdate={async (priceId, price) => {
                   if (!activeDetail) return
                   try {
                     setIsSaving(true)
-                    await createListTourPrice(activeDetail.id, prices)
+                    await updateOneTourPrice(priceId, price)
                     await fetchTourDetail()
-                    setEditingPrices(false)
-                    toast.success('Cập nhật bảng giá thành công')
+                    setPricingFormMode(null)
+                    toast.success('Cập nhật giá thành công')
                   } catch (err: unknown) {
                     toast.error(getErrorMessage(err))
                   } finally {
@@ -741,30 +483,60 @@ export default function UpdateTourPage() {
                 }}
               />
             )}
-            <button
-              onClick={() => setEditingPrices(!editingPrices)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              {editingPrices ? 'Đóng chỉnh sửa' : 'Chỉnh sửa bảng giá'}
-            </button>
+
+            {pricingFormMode === 'add' && (
+              <TourAddPricingCard
+                onCreate={async (prices) => {
+                  if (!activeDetail) return
+                  try {
+                    setIsSaving(true)
+                    await createListTourPrice(activeDetail.id, prices)
+                    await fetchTourDetail()
+                    setPricingFormMode(null)
+                    toast.success('Tạo bảng giá thành công')
+                  } catch (err: unknown) {
+                    toast.error(getErrorMessage(err))
+                  } finally {
+                    setIsSaving(false)
+                  }
+                }}
+              />
+            )}
           </div>
         )}
 
         {/* Step 4: Itinerary */}
-        {currentStep === 4 && hasActiveDetail && (
+        {currentStep === 4 && activeDetail && (
           <div className="space-y-5">
-            {!editingItineraries && <TourDetailItineraryCard detail={activeDetail} />}
-            {editingItineraries && (
+            <TourDetailItineraryCard detail={activeDetail} />
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setItineraryFormMode((current) => (current === 'edit' ? null : 'edit'))}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {itineraryFormMode === 'edit' ? 'Ẩn form sửa lịch trình' : 'Chỉnh sửa lịch trình'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setItineraryFormMode((current) => (current === 'add' ? null : 'add'))}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {itineraryFormMode === 'add' ? 'Ẩn form thêm lịch trình' : 'Thêm lịch trình'}
+              </button>
+            </div>
+
+            {itineraryFormMode === 'edit' && (
               <TourEditItineraryCard
+                key={`${activeDetail.id}-${String(activeDetail.updatedAt)}`}
                 detail={activeDetail}
-                onCancel={() => setEditingItineraries(false)}
-                onSave={async (itineraries) => {
+                onUpdate={async (itineraryId, itinerary) => {
                   if (!activeDetail) return
                   try {
                     setIsSaving(true)
-                    await createListTourItinerary(activeDetail.id, itineraries)
+                    await updateOneTourItinerary(itineraryId, itinerary)
                     await fetchTourDetail()
-                    setEditingItineraries(false)
+                    setItineraryFormMode(null)
                     toast.success('Cập nhật lịch trình thành công')
                   } catch (err: unknown) {
                     toast.error(getErrorMessage(err))
@@ -774,12 +546,25 @@ export default function UpdateTourPage() {
                 }}
               />
             )}
-            <button
-              onClick={() => setEditingItineraries(!editingItineraries)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              {editingItineraries ? 'Đóng chỉnh sửa' : 'Chỉnh sửa lịch trình'}
-            </button>
+
+            {itineraryFormMode === 'add' && (
+              <TourAddItineraryCard
+                onCreate={async (itineraries) => {
+                  if (!activeDetail) return
+                  try {
+                    setIsSaving(true)
+                    await createListTourItinerary(activeDetail.id, itineraries)
+                    await fetchTourDetail()
+                    setItineraryFormMode(null)
+                    toast.success('Tạo lịch trình thành công')
+                  } catch (err: unknown) {
+                    toast.error(getErrorMessage(err))
+                  } finally {
+                    setIsSaving(false)
+                  }
+                }}
+              />
+            )}
           </div>
         )}
 

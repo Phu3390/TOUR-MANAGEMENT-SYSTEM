@@ -1,15 +1,10 @@
 export type UserFilterState = 'ALL' | 'ACTIVE' | 'INACTIVE'
-
-type RoleOption = {
-  value: string
-  label: string
-}
+import { STATIC_USER_ROLE_OPTIONS } from '../../../utils/userRoles'
 
 type UserFiltersProps = {
   keyword: string
   status: UserFilterState
   role: string
-  roleOptions: RoleOption[]
   onKeywordChange: (value: string) => void
   onStatusChange: (value: UserFilterState) => void
   onRoleChange: (value: string) => void
@@ -23,7 +18,6 @@ export default function UserFilters({
   keyword,
   status,
   role,
-  roleOptions,
   onKeywordChange,
   onStatusChange,
   onRoleChange,
@@ -64,7 +58,7 @@ export default function UserFilters({
             className={inputClass}
           >
             <option value="ALL">Tất cả vai trò</option>
-            {roleOptions.map((option) => (
+            {STATIC_USER_ROLE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

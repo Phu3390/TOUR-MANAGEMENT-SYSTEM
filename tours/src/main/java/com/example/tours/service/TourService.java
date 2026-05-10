@@ -86,6 +86,12 @@ public class TourService {
                     cb,
                     "duration",
                     req.getDuration());
+            // 🏷️ tourType
+            builder.equal(
+                    root,
+                    cb,
+                    "tourType",
+                    req.getTourType());
 
             // ⭐ rating
             builder.ge(
@@ -148,6 +154,11 @@ public class TourService {
                 pageData.map(tourMapper::toResponse));
     }
 
+    public String getTourTitle(UUID id) {
+        Tour tour = tourRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.Tour_NOT_FOUND));
+        return tour.getTitle();
+    }
+
     @Transactional
     public TourResponse createFullTour(CreateTourRequest request) {
         Tour tour = create(request.getTour());
@@ -201,10 +212,9 @@ public class TourService {
         return tourMapper.toResponse(tourRepository.save(tour));
     }
 
-    public void delete(UUID id) {
+    public void EditActive(UUID id, TourStatus status) {
         Tour tour = tourRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.Tour_NOT_FOUND));
-        tour.setStatus(TourStatus.INACTIVE);
+        tour.setStatus(status);
         tourRepository.save(tour);
     }
-
 }

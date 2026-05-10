@@ -144,7 +144,7 @@ public class AuthService {
                 .issueTime(new java.util.Date())
                 .expirationTime(new Date(Instant.now().plus(exp, ChronoUnit.HOURS).toEpochMilli()))
                 .claim("userId", user.getId())
-                .claim("scope", buildScope(user))
+                .claim("scope", user.getRole().getName())
                 .claim("fullName", user.getFullName())
                 .build();
         Payload payload = new Payload(claimsSet.toJSONObject());

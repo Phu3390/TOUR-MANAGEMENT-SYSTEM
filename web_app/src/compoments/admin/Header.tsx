@@ -1,3 +1,5 @@
+import HeaderProfile from '../Profile'
+
 type HeaderProps = {
   onToggleMobileSidebar: () => void
 }
@@ -28,23 +30,12 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
           </span>
           <input
             type="search"
-            placeholder="Tìm kiếm hệ thống..."
+            placeholder="Tìm kiếm "
             className="w-full rounded-full bg-slate-100 py-2 pl-10 pr-4 text-sm text-slate-700 outline-none ring-violet-500 transition focus:ring-2"
           />
         </div>
 
-        <button
-          type="button"
-          className="ml-auto flex shrink-0 items-center gap-3 border-l border-slate-200 pl-3 text-left transition-colors hover:text-violet-700 sm:pl-4"
-        >
-          <span className="hidden leading-tight sm:block">
-            <span className="block text-sm font-semibold text-slate-900">Admin User</span>
-            <span className="block text-xs text-slate-500">Quản trị viên</span>
-          </span>
-          <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-blue-600 bg-blue-50 text-lg transition-colors hover:border-violet-600">
-            <span aria-hidden="true">👤</span>
-          </span>
-        </button>
+        <HeaderProfile />
       </div>
     </header>
   )

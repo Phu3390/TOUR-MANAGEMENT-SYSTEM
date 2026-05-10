@@ -5,12 +5,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import com.example.booking.entity.Voucher;
 
 @Repository
-public interface VoucherRepository extends JpaRepository<Voucher, UUID> {
+public interface VoucherRepository extends JpaRepository<Voucher, UUID>, JpaSpecificationExecutor<Voucher> {
     Optional<Voucher> findByCode(String code);
     boolean existsByCode(String code);
     boolean existsByCodeAndIdNot(String code, UUID id);

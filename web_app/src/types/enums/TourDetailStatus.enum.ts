@@ -1,5 +1,6 @@
 export enum TourDetailStatus{
-     ACTIVE='ACTIVE',
+    ACTIVE='ACTIVE',
+    INACTIVE='INACTIVE',
     FULL='FULL',
     CANCELLED='CANCELLED'
 }

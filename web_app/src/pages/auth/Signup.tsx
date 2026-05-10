@@ -42,7 +42,7 @@ export default function Signup() {
         <div className="mb-8 text-center">
           <h1 className="mb-2 flex items-center justify-center gap-2 text-4xl font-bold text-[#0066cc]">
             <span className="text-2xl">⊙</span>
-            TravelAdmin
+            TourTravel
           </h1>
           <h2 className="mt-4 text-4xl font-bold text-[#1a1a1a]">Đăng ký tài khoản</h2>
         </div>

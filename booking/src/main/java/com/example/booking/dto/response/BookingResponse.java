@@ -21,6 +21,8 @@ public class BookingResponse {
 
     private UUID userId;
     private UUID tourId;
+    private String tourName;
+
     private UUID tourDetailId;
 
     private String contactFullname;

@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.common.dto.ApiResponse;
 import com.example.common.dto.PageResponse;
 import com.example.common.dto.TourQueryRequest;
+import com.example.common.enums.TourStatus;
 import com.example.tours.dto.request.CreateTourRequest;
 import com.example.tours.dto.request.TourRequest;
 import com.example.tours.dto.response.TourResponse;
@@ -22,7 +24,6 @@ import com.example.tours.service.TourService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-
 
 @RestController
 @RequestMapping("/api/tours/tour")
@@ -40,6 +41,13 @@ public class TourController {
         return tourService.getAll();
     }
 
+    @GetMapping("/title/{id}")
+    public ApiResponse<String> getTourTitle(@PathVariable UUID id) {
+        return ApiResponse.<String>builder()
+            .data(tourService.getTourTitle(id))
+            .build();
+    }
+
     @GetMapping("/{id}")
     public TourResponse getById(@PathVariable UUID id) {
         return tourService.getById(id);
@@ -51,13 +59,13 @@ public class TourController {
     }
 
     @PutMapping("/{id}")
-    public TourResponse update(@PathVariable UUID id, @RequestBody TourRequest request) {        
+    public TourResponse update(@PathVariable UUID id, @RequestBody TourRequest request) {
         return tourService.update(id, request);
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable UUID id) {
-        tourService.delete(id);
+    @PutMapping("/status/{id}")
+    public void editActive(@PathVariable UUID id, @RequestBody TourStatus status) {
+        tourService.EditActive(id, status);
     }
 
 }

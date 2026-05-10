@@ -1,14 +1,16 @@
 import type { TourResponse } from '../../../types/tour/tour.type'
+import { TourStatus } from '../../../types/enums/TourStatus.enum'
 
 interface TourListProps {
   tours: TourResponse[]
   loading: boolean
   onDetail?: (tour: TourResponse) => void
   onEdit?: (tour: TourResponse) => void
-  onDelete?: (tour: TourResponse) => void
+  onStatusToggle?: (tour: TourResponse, nextStatus: TourStatus) => void
+  updatingTourId?: string | null
 }
 
-export default function TourList({ tours, loading, onDetail, onEdit, onDelete }: TourListProps) {
+export default function TourList({ tours, loading, onDetail, onEdit, onStatusToggle, updatingTourId }: TourListProps) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
@@ -92,13 +94,16 @@ export default function TourList({ tours, loading, onDetail, onEdit, onDelete }:
                       >
                         Sửa
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => onDelete?.(tour)}
-                        className="whitespace-nowrap rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"
+                      <select
+                        value={tour.status}
+                        disabled={updatingTourId === tour.id}
+                        onChange={(event) => onStatusToggle?.(tour, event.target.value as TourStatus)}
+                        className="min-w-28 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Xóa
-                      </button>
+                        <option value={TourStatus.DRAFT}>Bản nháp</option>
+                        <option value={TourStatus.ACTIVE}>Hoạt động</option>
+                        <option value={TourStatus.INACTIVE}>Ngưng hoạt động</option>
+                      </select>
                     </div>
                   </td>
                 </tr>

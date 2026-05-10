@@ -1,3 +1,4 @@
+import type { TourStatus } from '../../types/enums/TourStatus.enum'
 import type { CreateTourRequest, DetailTourResponse, FormUploadImageResponse, PageTourResponse, TourQueryRequest, TourRequest } from '../../types/tour/tour.type'
 import api from '../axios'
 
@@ -26,4 +27,12 @@ export async function uploadImage(image: File): Promise<FormUploadImageResponse>
   formData.append('file', image)
   const res = await api.post('/tours/filestack/image', formData)
   return res.data as FormUploadImageResponse
+}
+
+export async function editStatus(id: string, status: TourStatus): Promise<void> {
+  await api.put(`/tours/tour/status/${id}`, JSON.stringify(status), {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
 }

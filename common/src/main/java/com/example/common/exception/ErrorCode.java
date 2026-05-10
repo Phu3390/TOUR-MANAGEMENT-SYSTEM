@@ -48,8 +48,15 @@ public enum ErrorCode {
     REMAINING_SEATS_CANNOT_EXCEED_CAPACITY(1037, "Số chỗ còn lại không được vượt quá sức chứa", 400),
     REMAINING_SEATS_CANNOT_BE_NEGATIVE(1038, "Số lượng chỗ âm", 400),
     VOUCHER_CODE_EXISTED(1039, "Mã voucher đã tồn tại", 400),
-    PAYMENT_EXITS_PENDING(1040, "Đã tồn tại phương thức thanh toán đang chờ xử lý", 400);
-
+    PAYMENT_EXITS_PENDING(1040, "Đã tồn tại phương thức thanh toán đang chờ xử lý", 400),
+    INVALID_BOOKING_STATUS(1041, "Trạng thái booking không hợp lệ", 400),
+    INVALID_PAYMENT_METHOD(1042, "Phương thức thanh toán không hợp lệ", 400),
+    PAYMENT_NOT_FOUND(1043, "Phương thức thanh toán không tồn tại", 400),
+    PAYMENT_ALREADY_VERIFIED(1044, "Phương thức thanh toán đã được xác minh", 400),
+    INVALID_PAYMENT_STATUS(1045, "Trạng thái thanh toán không hợp lệ", 400),
+    VOUCHER_ONLY_ONE_DISCOUNT_TYPE(1046, "Chỉ được nhập một trong hai loại giảm giá", 400),
+    VOUCHER_DATE_INVALID(1047, "Ngày bắt đầu phải trước ngày kết thúc", 400),
+    VOUCHER_START_DATE_INVALID(1048, "Ngày bắt đầu phải sau ngày hiện tại", 400);
 
     private final int code;
     private final String message;

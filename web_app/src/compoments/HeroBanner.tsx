@@ -89,7 +89,7 @@ export default function HeroBanner() {
 
       {/* Booking Button */}
       <Link
-        to="/client/book"
+        to="/client/tours"
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 inline-flex rounded-full bg-orange-500 px-6 py-3 text-base font-bold text-white transition hover:bg-orange-600 shadow-lg"
       >
         Đặt Tour Ngay

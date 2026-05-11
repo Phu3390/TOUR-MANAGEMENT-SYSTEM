@@ -8,8 +8,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.booking.dto.request.CreateBookingRequest;
+import com.example.booking.dto.request.isValidBookingRequest;
 import com.example.booking.dto.response.BookingResponse;
 import com.example.booking.dto.response.TourPriceTypeResponse;
+import com.example.booking.dto.response.isValidBookingResponse;
 import com.example.booking.service.BookingPageService;
 import com.example.booking.service.BookingService;
 import com.example.common.dto.BookingQueryRequest;
@@ -61,10 +63,10 @@ public class BookingController {
         return bookingService.confirmBooking(bookingId);
     }
 
-    @PostMapping("/verify/{paymentId}")
-    public BookingResponse verifyPayment(@PathVariable UUID paymentId) {
-        return bookingService.verifyPayment(paymentId);
-    }
+    // @PostMapping("/verify/{paymentId}")
+    // public BookingResponse verifyPayment(@PathVariable UUID paymentId) {
+    // return bookingService.verifyPayment(paymentId);
+    // }
 
     @PostMapping("/cancel/{paymentId}")
     public void cancelBooking(@PathVariable UUID paymentId) {
@@ -74,5 +76,10 @@ public class BookingController {
     @PostMapping
     public BookingResponse createBooking(@RequestBody @Valid CreateBookingRequest request) {
         return bookingService.createBooking(request);
+    }
+
+    @PostMapping("/isvalid")
+    public isValidBookingResponse isValidBooking(@RequestBody isValidBookingRequest req) {
+        return bookingService.isValidBooking(req);
     }
 }

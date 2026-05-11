@@ -16,6 +16,8 @@ import ToursPage from '../pages/client/Tours'
 import ClientTourDetailPage from '../pages/client/TourDetail'
 import ClientHome from '../pages/client/Home'
 import BookingPage from '../pages/client/Booking'
+import BookingHistoryPage from '../pages/client/BookingHistory'
+import BookingDetailPage from '../pages/client/BookingDetail'
 import ProtectedRoute from './ProtectedRoute'
 
 export default function AppRoutes() {
@@ -47,6 +49,8 @@ export default function AppRoutes() {
         <Route path="tours" element={<ToursPage />} />
         <Route path="tours/:id" element={<ClientTourDetailPage />} />
         <Route path="tours/:id/booking" element={<BookingPage />} />
+        <Route path="dashboard" element={<BookingHistoryPage />} />
+        <Route path="bookings/:id" element={<BookingDetailPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

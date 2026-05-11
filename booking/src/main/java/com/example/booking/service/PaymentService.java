@@ -1,5 +1,6 @@
 package com.example.booking.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -65,6 +66,7 @@ public class PaymentService {
                     Payment payment = paymentMapper.toEntity(p);
                     payment.setBooking(booking);
                     payment.setStatus(PaymentStatus.PENDING);
+                    payment.setAmount(booking.getTotalPrice());
                     return payment;
                 })
                 .toList();

@@ -4,14 +4,17 @@ import { toast } from 'react-toastify'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { getById } from '../../api/tour/tour.api'
-import { createBooking } from '../../api/booking/booking.api'
-import { createBookingSchema, type CreateBookingInput } from '../../schema/bookingSchema'
+import { createBooking, getById as getBookingById } from '../../api/booking/booking.api'
+import { getVoucherByCode } from '../../api/booking/voucher.api'
+import { createPostBookingPayment } from '../../utils/bookingPayment'
+import { buildCreateBookingSchema, type CreateBookingInput } from '../../schema/bookingSchema'
 import type { TourResponse } from '../../types/tour/tour.type'
 import { TourDetailStatus } from '../../types/enums/TourDetailStatus.enum'
 import { BookingStatus } from '../../types/enums/BookingStatus.enum'
 import { PaymentMethod } from '../../types/enums/PaymentMethod.enum'
 import { PaymentStatus } from '../../types/enums/PaymentStatus.enum'
 import { PriceType } from '../../types/enums/PriceType.enum'
+import { Status } from '../../types/enums/Status.enum'
 
 const formatVnd = (value: number) =>
   new Intl.NumberFormat('vi-VN', {
@@ -53,6 +56,8 @@ export default function BookingPage() {
   const [selectedDetailIndex, setSelectedDetailIndex] = useState(0)
   const [voucherCode, setVoucherCode] = useState('')
   const [voucherDiscount, setVoucherDiscount] = useState(0)
+  const [appliedVoucherCode, setAppliedVoucherCode] = useState<string | null>(null)
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
@@ -94,8 +99,14 @@ export default function BookingPage() {
     formState: { errors },
     reset,
     control,
+    setValue,
   } = useForm<CreateBookingInput>({
-    resolver: zodResolver(createBookingSchema),
+    resolver: zodResolver(
+      buildCreateBookingSchema({
+        remainingSeats: selectedDetail?.remainingSeats,
+        allowChild: selectedDetail?.tourPrices?.some((p) => p.priceType === PriceType.CHILD) ?? false,
+      }),
+    ),
     defaultValues: {
       status: BookingStatus.PENDING,
       bookingItems: [
@@ -121,17 +132,43 @@ export default function BookingPage() {
   const contactAddress = useWatch({ control, name: 'contactAddress' })
   const selectedPaymentMethod = useWatch({ control, name: 'paymentRequests.0.method' })
 
+  const hasChildPrice = useMemo(
+    () => selectedDetail?.tourPrices?.some((p) => p.priceType === PriceType.CHILD) ?? false,
+    [selectedDetail],
+  )
+
+  const availableTravelerOptions = useMemo(
+    () =>
+      hasChildPrice
+        ? travelerOptions
+        : travelerOptions.filter((option) => option.priceType !== PriceType.CHILD),
+    [hasChildPrice],
+  )
+
+  const getBookingItemIndexByPriceType = (priceType: PriceType) =>
+    travelerOptions.findIndex((option) => option.priceType === priceType)
+
+  useEffect(() => {
+    if (!hasChildPrice) {
+      const childIndex = getBookingItemIndexByPriceType(PriceType.CHILD)
+      if (childIndex >= 0) {
+        setValue(`bookingItems.${childIndex}.quantity`, 0)
+      }
+    }
+  }, [hasChildPrice, setValue])
+
   const selectedPrices = useMemo(() => {
     const adultPrice = selectedDetail?.tourPrices?.find((p) => p.priceType === PriceType.ADULT)?.price || 0
-    const childPrice = selectedDetail?.tourPrices?.find((p) => p.priceType === PriceType.CHILD)?.price || Math.floor(adultPrice * 0.8)
+    const childPrice = selectedDetail?.tourPrices?.find((p) => p.priceType === PriceType.CHILD)?.price || 0
 
     return { adultPrice, childPrice }
   }, [selectedDetail])
 
   const derivedBookingItems = useMemo(
     () =>
-      travelerOptions.map((option, idx) => {
-        const quantity = Number(bookingItems?.[idx]?.quantity || 0)
+      availableTravelerOptions.map((option) => {
+        const formIndex = getBookingItemIndexByPriceType(option.priceType)
+        const quantity = Number(bookingItems?.[formIndex]?.quantity || 0)
         const unitPrice = option.priceType === PriceType.CHILD ? selectedPrices.childPrice : selectedPrices.adultPrice
 
         return {
@@ -141,16 +178,116 @@ export default function BookingPage() {
           total: unitPrice * quantity,
         }
       }),
-    [bookingItems, selectedPrices.adultPrice, selectedPrices.childPrice],
+    [availableTravelerOptions, bookingItems, selectedPrices.adultPrice, selectedPrices.childPrice],
   )
 
   const totalPrice = derivedBookingItems.reduce((sum, item) => sum + item.total, 0)
-  const taxFee = Math.floor(totalPrice * 0.05)
-  const finalTotal = totalPrice + taxFee - voucherDiscount
+  const totalTravelers = derivedBookingItems.reduce((sum, item) => sum + item.quantity, 0)
+  const remainingSeats = selectedDetail?.remainingSeats ?? 0
+  const finalTotal = Math.max(totalPrice - voucherDiscount, 0)
+
+  const calculateVoucherDiscount = (
+    baseAmount: number,
+    voucher: {
+      discountPercent: number | null
+      discountAmount: number | null
+    },
+  ) => {
+    if (voucher.discountPercent != null && voucher.discountPercent > 0) {
+      return Math.floor((baseAmount * voucher.discountPercent) / 100)
+    }
+
+    if (voucher.discountAmount != null && voucher.discountAmount > 0) {
+      return Math.floor(voucher.discountAmount)
+    }
+
+    return 0
+  }
+
+  const handleApplyVoucher = async () => {
+    const code = voucherCode.trim().toUpperCase()
+
+    if (!code) {
+      toast.error('Vui lòng nhập mã voucher')
+      return
+    }
+
+    if (totalPrice <= 0) {
+      toast.error('Tổng tiền phải lớn hơn 0 để áp dụng voucher')
+      return
+    }
+
+    try {
+      setIsApplyingVoucher(true)
+      const response = await getVoucherByCode(code)
+
+      if (response.code !== 200 || !response.data) {
+        setVoucherDiscount(0)
+        setAppliedVoucherCode(null)
+        toast.error(response.message || 'Mã voucher không tồn tại')
+        return
+      }
+
+      const voucher = response.data
+      const now = new Date()
+      const startDate = new Date(voucher.startDate)
+      const endDate = new Date(voucher.endDate)
+
+      if (voucher.status !== Status.ACTIVE) {
+        setVoucherDiscount(0)
+        setAppliedVoucherCode(null)
+        toast.error('Voucher chưa được kích hoạt hoặc đã tắt')
+        return
+      }
+
+      if (voucher.quantity <= 0) {
+        setVoucherDiscount(0)
+        setAppliedVoucherCode(null)
+        toast.error('Voucher đã hết lượt sử dụng')
+        return
+      }
+
+      if (now < startDate || now > endDate) {
+        setVoucherDiscount(0)
+        setAppliedVoucherCode(null)
+        toast.error('Voucher đã hết hạn hoặc chưa đến thời gian áp dụng')
+        return
+      }
+
+      const discount = calculateVoucherDiscount(totalPrice, {
+        discountPercent: voucher.discountPercent,
+        discountAmount: voucher.discountAmount,
+      })
+
+      if (discount <= 0) {
+        setVoucherDiscount(0)
+        setAppliedVoucherCode(null)
+        toast.error('Voucher không hợp lệ')
+        return
+      }
+
+      setVoucherDiscount(Math.min(discount, totalPrice))
+      setVoucherCode(code)
+      setAppliedVoucherCode(code)
+      toast.success('Áp dụng voucher thành công')
+    } catch {
+      setVoucherDiscount(0)
+      setAppliedVoucherCode(null)
+      toast.error('Mã voucher không tồn tại hoặc không thể kiểm tra lúc này')
+    } finally {
+      setIsApplyingVoucher(false)
+    }
+  }
 
   const onSubmit = async (data: CreateBookingInput) => {
     if (!selectedDetail) {
       toast.error('Vui lòng chọn đợt khởi hành')
+      return
+    }
+
+    const childInput = data.bookingItems.find((item) => item.priceType === PriceType.CHILD)
+    if (!hasChildPrice && (childInput?.quantity ?? 0) > 0) {
+      toast.error('Đợt tour này không áp dụng vé trẻ em')
       return
     }
 
@@ -168,11 +305,13 @@ export default function BookingPage() {
           status: data.status,
           note: data.note,
         },
-        bookingItems: derivedBookingItems.map((item) => ({
-          priceType: item.priceType as PriceType,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        })),
+        bookingItems: derivedBookingItems
+          .filter((item) => item.quantity > 0)
+          .map((item) => ({
+            priceType: item.priceType as PriceType,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          })),
         paymentRequests: data.paymentRequests.map((payment) => ({
           amount: finalTotal,
           method: payment.method,
@@ -181,12 +320,54 @@ export default function BookingPage() {
           provider: payment.provider,
           paidAt: payment.paidAt,
         })),
-        code: voucherCode || undefined,
+        code: appliedVoucherCode || undefined,
       }
 
       const response = await createBooking(payload)
+      const booking = response.data
 
       if (response.code === 201 || response.code === 200) {
+        if (!booking) {
+          toast.error('Không nhận được thông tin booking sau khi tạo thành công')
+          return
+        }
+
+        const paymentMethod = data.paymentRequests[0]?.method ?? PaymentMethod.CASH
+
+        if (paymentMethod === PaymentMethod.VNPAY) {
+          const bookingDetailResponse = await getBookingById(booking.id)
+          const bookingForPayment = bookingDetailResponse?.data ?? booking
+          const paymentResponse = await createPostBookingPayment(bookingForPayment, paymentMethod)
+
+          if (paymentResponse?.code === 200 && paymentResponse.data?.url) {
+            toast.info('Đang chuyển sang cổng thanh toán VNPAY...')
+            window.location.assign(paymentResponse.data.url)
+            return
+          }
+
+          toast.error(paymentResponse?.message || 'Không tạo được liên kết thanh toán VNPAY')
+          setCurrentStep(4)
+          reset()
+          return
+        }
+
+        if (paymentMethod === PaymentMethod.MOMO) {
+          const bookingDetailResponse = await getBookingById(booking.id)
+          const bookingForPayment = bookingDetailResponse?.data ?? booking
+          const paymentResponse = await createPostBookingPayment(bookingForPayment, paymentMethod)
+
+          if (paymentResponse?.code === 200 && paymentResponse.data?.url) {
+            toast.info('Đang chuyển sang cổng thanh toán MOMO...')
+            window.location.assign(paymentResponse.data.url)
+            return
+          }
+
+          toast.error(paymentResponse?.message || 'Không tạo được liên kết thanh toán MOMO')
+          setCurrentStep(4)
+          reset()
+          return
+        }
+
         toast.success('Đặt tour thành công! Chúng tôi sẽ liên hệ bạn sớm.')
         reset()
         setCurrentStep(4)
@@ -201,13 +382,55 @@ export default function BookingPage() {
     }
   }
 
-  const isStep2Valid = contactFullname && contactEmail && contactPhone && contactAddress && selectedDetail
+  const hasValidTravelerCount = totalTravelers > 0 && totalTravelers <= remainingSeats
+  const isStep2Valid =
+    contactFullname &&
+    contactEmail &&
+    contactPhone &&
+    contactAddress &&
+    contactAddress.trim().length >= 5 &&
+    selectedDetail &&
+    hasValidTravelerCount
   const isStep3Valid = selectedPaymentMethod
 
   const handleNextStep = () => {
     if (currentStep === 2 && !isStep2Valid) {
-      toast.error('Vui lòng điền đầy đủ thông tin khách hàng')
-      return
+      if (!contactFullname) {
+        toast.error('Vui lòng nhập họ và tên')
+        return
+      }
+      if (!contactEmail) {
+        toast.error('Vui lòng nhập email')
+        return
+      }
+      if (!contactPhone) {
+        toast.error('Vui lòng nhập số điện thoại')
+        return
+      }
+      if (contactPhone.length < 9 || contactPhone.length > 11) {
+        toast.error('Số điện thoại phải từ 9 đến 11 ký tự')
+        return
+      }
+      if (!contactAddress) {
+        toast.error('Vui lòng nhập địa chỉ')
+        return
+      }
+      if (contactAddress.trim().length < 5) {
+        toast.error('Địa chỉ phải ≥ 5 ký tự')
+        return
+      }
+      if (totalTravelers <= 0) {
+        toast.error('Vui lòng chọn ít nhất 1 khách')
+        return
+      }
+      if (totalTravelers > remainingSeats) {
+        toast.error(`Số khách vượt quá số chỗ còn lại (${remainingSeats})`)
+        return
+      }
+      if (!selectedDetail) {
+        toast.error('Vui lòng chọn đợt khởi hành')
+        return
+      }
     }
     if (currentStep < 4) setCurrentStep(currentStep + 1)
   }
@@ -395,9 +618,16 @@ export default function BookingPage() {
                   <div>
                     <h3 className="mb-4 text-xl font-bold text-slate-900">👥 Lựa Chọn Khách</h3>
 
+                    {!hasChildPrice && (
+                      <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                        Đợt khởi hành này không áp dụng vé trẻ em.
+                      </p>
+                    )}
+
                     <div className="space-y-3">
-                      {travelerOptions.map((option, idx) => {
-                        const derived = derivedBookingItems[idx]
+                      {availableTravelerOptions.map((option) => {
+                        const idx = getBookingItemIndexByPriceType(option.priceType)
+                        const derived = derivedBookingItems.find((item) => item.priceType === option.priceType)
 
                         return (
                           <div key={option.priceType} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -475,25 +705,27 @@ export default function BookingPage() {
                       <input
                         type="text"
                         value={voucherCode}
-                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                        onChange={(e) => {
+                          setVoucherCode(e.target.value.toUpperCase())
+                          if (appliedVoucherCode && e.target.value.toUpperCase() !== appliedVoucherCode) {
+                            setAppliedVoucherCode(null)
+                            setVoucherDiscount(0)
+                          }
+                        }}
                         placeholder="Nhập mã voucher"
                         className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
                       />
                       <button
                         type="button"
-                        onClick={() => {
-                          if (voucherCode) {
-                            toast.info('Đang kiểm tra mã voucher...')
-                            setVoucherDiscount(Math.floor(totalPrice * 0.1))
-                          }
-                        }}
-                        className="rounded-lg bg-emerald-600 px-6 py-2 font-semibold text-white hover:bg-emerald-700"
+                        onClick={handleApplyVoucher}
+                        disabled={isApplyingVoucher}
+                        className="rounded-lg bg-emerald-600 px-6 py-2 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Áp Dụng
+                        {isApplyingVoucher ? 'Đang kiểm tra...' : 'Áp Dụng'}
                       </button>
                     </div>
                     {voucherDiscount > 0 && (
-                      <p className="mt-2 text-sm font-semibold text-emerald-600">✓ Giảm giá: {formatVnd(voucherDiscount)}</p>
+                      <p className="mt-2 text-sm font-semibold text-emerald-600">✓ Mã {appliedVoucherCode}: giảm {formatVnd(voucherDiscount)}</p>
                     )}
                   </div>
                 </div>
@@ -542,8 +774,7 @@ export default function BookingPage() {
                     >
                       Tiếp Tục →
                     </button>
-                  )}
-                  {currentStep === 3 && (
+                  )}                  {currentStep === 3 && (
                     <button
                       type="submit"
                       disabled={isSubmitting || !isStep3Valid}
@@ -618,10 +849,6 @@ export default function BookingPage() {
                 <div className="flex justify-between text-xs text-slate-600">
                   <span>Cộng tiền</span>
                   <span className="font-semibold text-slate-900">{formatVnd(totalPrice)}</span>
-                </div>
-                <div className="flex justify-between text-xs text-slate-600">
-                  <span>Thuế & Phí</span>
-                  <span className="font-semibold text-slate-900">{formatVnd(taxFee)}</span>
                 </div>
                 {voucherDiscount > 0 && (
                   <div className="flex justify-between text-xs text-emerald-600">

@@ -16,4 +16,5 @@ public interface BookingRepository extends JpaRepository<Booking, UUID>, JpaSpec
     List<Booking> findAllByStatusAndExpiredAtBefore(BookingStatus status, LocalDateTime expiredAt);
     List<Booking> findAllByStatus(BookingStatus status);
     List<Booking> findByUserId(UUID userId);
+    List<Booking> findByTourIdAndUserId(UUID tourId, UUID userId);
 }

@@ -7,6 +7,7 @@ import {
   getPriceTypeLabel,
   getTourTypeLabel,
 } from '../../utils/enumTranslation'
+import TourReviewsSection from '../../compoments/client/tour/TourReviewsSection'
 
 const formatVnd = (value: number) =>
   new Intl.NumberFormat('vi-VN', {
@@ -177,11 +178,6 @@ export default function ClientTourDetailPage() {
             </div>
 
             <h1 className="text-4xl font-bold leading-tight text-slate-900 md:text-5xl">{tour.title}</h1>
-            <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-3">
-              <p><span className="font-semibold">Mã tour:</span> {tour.slug}</p>
-              <p><span className="font-semibold">Tạo lúc:</span> {formatDate(tour.createdAt)}</p>
-              <p><span className="font-semibold">Cập nhật:</span> {formatDate(tour.updatedAt)}</p>
-            </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-left text-slate-700">
               <h2 className="mb-2 text-2xl font-semibold text-slate-900">Tổng quan</h2>
@@ -281,6 +277,12 @@ export default function ClientTourDetailPage() {
             </div>
           )}
         </section>
+
+        <TourReviewsSection
+          tourId={tour.id}
+          totalReviews={tour.totalReviews}
+          averageRating={tour.rating}
+        />
       </div>
 
     </div>

@@ -54,7 +54,7 @@ export default function FeaturedTours() {
       {tours.map((tour) => (
         <Link
           key={tour.id}
-          to={`/client/tours`}
+          to={`/client/tours/${tour.id}`}
           className="group overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
         >
           {/* Image */}
@@ -95,15 +95,11 @@ export default function FeaturedTours() {
             </div>
 
             {/* CTA Button */}
-            <button
-              type="button"
-              className="mt-4 w-full rounded-lg bg-orange-500 py-2 font-semibold text-white transition hover:bg-orange-600"
-              onClick={(e) => {
-                e.preventDefault()
-              }}
-            >
-              Xem Chi Tiết
-            </button>
+            <div className="mt-4">
+              <span className="block w-full rounded-lg bg-orange-500 py-2 text-center font-semibold text-white">
+                Xem Chi Tiết
+              </span>
+            </div>
           </div>
         </Link>
       ))}

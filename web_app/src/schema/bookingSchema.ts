@@ -39,7 +39,7 @@ export const bookingRequestSchema = z.object({
   note: z.string().optional(),
 })
 
-export const createBookingSchema = z.object({
+const baseCreateBookingSchema = z.object({
   contactFullname: z.string().min(2, 'Họ tên phải ≥ 2 ký tự'),
   contactEmail: z.string().email('Email không hợp lệ'),
   contactPhone: z.string().min(9, 'Số điện thoại không hợp lệ').max(11, 'Số điện thoại không hợp lệ'),
@@ -52,6 +52,52 @@ export const createBookingSchema = z.object({
   paymentRequests: z.array(paymentRequestSchema).min(1, 'Phải thêm ít nhất 1 phương thức thanh toán'),
   code: z.string().optional(),
 })
+
+export type CreateBookingSchemaOptions = {
+  remainingSeats?: number
+  allowChild?: boolean
+}
+
+export const buildCreateBookingSchema = (options?: CreateBookingSchemaOptions) =>
+  baseCreateBookingSchema.superRefine((data, ctx) => {
+    const totalTravelers = data.bookingItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+
+    if (totalTravelers <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['bookingItems'],
+        message: 'Phải chọn ít nhất 1 khách',
+      })
+    }
+
+    if (
+      typeof options?.remainingSeats === 'number' &&
+      options.remainingSeats >= 0 &&
+      totalTravelers > options.remainingSeats
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['bookingItems'],
+        message: `Số khách vượt quá số chỗ còn lại (${options.remainingSeats})`,
+      })
+    }
+
+    if (options?.allowChild === false) {
+      const childCount = data.bookingItems
+        .filter((item) => item.priceType === PriceType.CHILD)
+        .reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+
+      if (childCount > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['bookingItems'],
+          message: 'Đợt tour này không áp dụng vé trẻ em',
+        })
+      }
+    }
+  })
+
+export const createBookingSchema = buildCreateBookingSchema()
 
 export type BookingItemInput = z.infer<typeof bookingItemSchema>
 export type PaymentRequestInput = z.infer<typeof paymentRequestSchema>

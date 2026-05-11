@@ -6,6 +6,7 @@ import java.util.List;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+
 public class SpecificationBuilder<T> {
 
     private final List<Predicate> predicates = new ArrayList<>();
@@ -39,6 +40,23 @@ public class SpecificationBuilder<T> {
             Object value) {
         if (value != null) {
             predicates.add(cb.equal(root.get(field), value));
+        }
+
+        return this;
+    }
+
+    public SpecificationBuilder<T> joinEqual(
+            Root<T> root,
+            CriteriaBuilder cb,
+            String joinField,
+            String targetField,
+            Object value) {
+
+        if (value != null) {
+            predicates.add(
+                    cb.equal(
+                            root.join(joinField).get(targetField),
+                            value));
         }
 
         return this;

@@ -3,6 +3,7 @@ import authReducer from './auth/slice'
 import userReducer from './user/slice'
 import tourReducer from './tour/slice'
 import bookingReducer from './booking/slice'
+import bookingHistoryReducer from './booking/bookingHistory'
 import voucherReducer from './booking/voucher'
 
 export const store = configureStore({
@@ -11,6 +12,7 @@ export const store = configureStore({
     user: userReducer,
     tour: tourReducer,
     booking: bookingReducer,
+    bookingHistory: bookingHistoryReducer,
     voucher: voucherReducer,
   },
 })

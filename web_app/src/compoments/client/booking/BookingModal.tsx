@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { toast } from 'react-toastify'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createBooking } from '../../../api/booking/booking.api'
-import { createBookingSchema, type CreateBookingInput } from '../../../schema/bookingSchema'
+import { createBooking, getById as getBookingById } from '../../../api/booking/booking.api'
+import { createPostBookingPayment } from '../../../utils/bookingPayment'
+import { buildCreateBookingSchema, type CreateBookingInput } from '../../../schema/bookingSchema'
 import type { TourResponse } from '../../../types/tour/tour.type'
 import { TourDetailStatus } from '../../../types/enums/TourDetailStatus.enum'
 import { BookingStatus } from '../../../types/enums/BookingStatus.enum'
@@ -47,6 +48,8 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
     .sort((a, b) => new Date(a.startDay).getTime() - new Date(b.startDay).getTime()) || []
 
   const selectedDetail = sortedDetails[selectedDetailIndex]
+  const hasChildPrice = selectedDetail?.tourPrices?.some((p) => p.priceType === PriceType.CHILD) ?? false
+  const remainingSeats = selectedDetail?.remainingSeats ?? 0
 
   const {
     register,
@@ -55,7 +58,12 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
     formState: { errors },
     reset,
   } = useForm<CreateBookingInput>({
-    resolver: zodResolver(createBookingSchema),
+    resolver: zodResolver(
+      buildCreateBookingSchema({
+        remainingSeats,
+        allowChild: hasChildPrice,
+      }),
+    ),
     defaultValues: {
       status: BookingStatus.PENDING,
       bookingItems: [
@@ -81,14 +89,20 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
   const contactAddress = useWatch({ control, name: 'contactAddress' })
   const selectedPaymentMethod = useWatch({ control, name: 'paymentRequests.0.method' })
 
+  const availableTravelerOptions = hasChildPrice
+    ? travelerOptions
+    : travelerOptions.filter((option) => option.priceType !== PriceType.CHILD)
+
+  const getBookingItemIndexByPriceType = (priceType: PriceType) =>
+    travelerOptions.findIndex((option) => option.priceType === priceType)
+
   const selectedPrices = {
     adultPrice: selectedDetail?.tourPrices?.find((p) => p.priceType === PriceType.ADULT)?.price || 0,
-    childPrice:
-      selectedDetail?.tourPrices?.find((p) => p.priceType === PriceType.CHILD)?.price ||
-      Math.floor((selectedDetail?.tourPrices?.find((p) => p.priceType === PriceType.ADULT)?.price || 0) * 0.8),
+    childPrice: selectedDetail?.tourPrices?.find((p) => p.priceType === PriceType.CHILD)?.price || 0,
   }
 
-  const derivedBookingItems = travelerOptions.map((option, idx) => {
+  const derivedBookingItems = availableTravelerOptions.map((option) => {
+    const idx = getBookingItemIndexByPriceType(option.priceType)
     const quantity = Number(bookingItems?.[idx]?.quantity || 0)
     const unitPrice = option.priceType === PriceType.CHILD ? selectedPrices.childPrice : selectedPrices.adultPrice
 
@@ -101,29 +115,33 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
   })
 
   const totalPrice = derivedBookingItems.reduce((sum, item) => sum + item.total, 0)
-  const taxFee = Math.floor(totalPrice * 0.05)
-  const finalTotal = totalPrice + taxFee
+  const totalTravelers = derivedBookingItems.reduce((sum, item) => sum + item.quantity, 0)
+  const finalTotal = totalPrice
 
   const onSubmit = async (data: CreateBookingInput) => {
-    console.log('Booking modal onSubmit called', data)
-    console.log('[DEBUG] All form data:', {
-      contactFullname: data.contactFullname,
-      contactEmail: data.contactEmail,
-      contactPhone: data.contactPhone,
-      contactAddress: data.contactAddress,
-      bookingItems: data.bookingItems,
-      paymentRequests: data.paymentRequests,
-      status: data.status,
-    })
-
     if (!selectedDetail) {
       toast.error('Vui lòng chọn đợt khởi hành')
       return
     }
 
+    if (totalTravelers <= 0) {
+      toast.error('Phải chọn ít nhất 1 khách')
+      return
+    }
+
+    if (totalTravelers > remainingSeats) {
+      toast.error(`Số khách vượt quá số chỗ còn lại (${remainingSeats})`)
+      return
+    }
+
+    const childInput = data.bookingItems.find((item) => item.priceType === PriceType.CHILD)
+    if (!hasChildPrice && (childInput?.quantity ?? 0) > 0) {
+      toast.error('Đợt tour này không áp dụng vé trẻ em')
+      return
+    }
+
     try {
       setIsSubmitting(true)
-      toast.info('[DEBUG] onSubmit handler started')
 
       const payload = {
         bookingRequest: {
@@ -137,11 +155,13 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
           status: data.status,
           note: data.note,
         },
-        bookingItems: derivedBookingItems.map((item) => ({
-          priceType: item.priceType,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        })),
+        bookingItems: derivedBookingItems
+          .filter((item) => item.quantity > 0)
+          .map((item) => ({
+            priceType: item.priceType,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          })),
         paymentRequests: data.paymentRequests.map((payment) => ({
           amount: finalTotal,
           method: payment.method,
@@ -152,11 +172,69 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
         })),
         code: data.code,
       }
-      console.log('Booking payload:', payload)
 
       const response = await createBooking(payload)
+      const booking = response.data
 
       if (response.code === 201 || response.code === 200) {
+        if (!booking) {
+          toast.error('Không nhận được thông tin booking sau khi tạo thành công')
+          return
+        }
+
+        const paymentMethod = String(selectedPaymentMethod ?? PaymentMethod.CASH)
+
+        if (paymentMethod === PaymentMethod.VNPAY) {
+          const bookingDetailResponse = await getBookingById(booking.id)
+          const bookingForPayment = bookingDetailResponse?.data ?? booking
+          const paymentResponse = await createPostBookingPayment(bookingForPayment, paymentMethod)
+
+          if (paymentResponse?.code === 200 && paymentResponse.data?.url) {
+            toast.info('Đang chuyển sang cổng thanh toán VNPAY...')
+            window.location.assign(paymentResponse.data.url)
+            return
+          }
+
+          toast.error(paymentResponse?.message || 'Không tạo được liên kết thanh toán VNPAY')
+          setCurrentStep(4)
+          reset()
+          return
+        }
+
+        if (paymentMethod === PaymentMethod.MOMO) {
+          const bookingDetailResponse = await getBookingById(booking.id)
+          const bookingForPayment = bookingDetailResponse?.data ?? booking
+          const paymentResponse = await createPostBookingPayment(bookingForPayment, paymentMethod)
+
+          if (paymentResponse?.code === 200 && paymentResponse.data?.url) {
+            toast.info('Đang chuyển sang cổng thanh toán MOMO...')
+            window.location.assign(paymentResponse.data.url)
+            return
+          }
+
+          toast.error(paymentResponse?.message || 'Không tạo được liên kết thanh toán MOMO')
+          setCurrentStep(4)
+          reset()
+          return
+        }
+
+        if (paymentMethod === PaymentMethod.MOMO) {
+          const bookingDetailResponse = await getBookingById(booking.id)
+          const bookingForPayment = bookingDetailResponse?.data ?? booking
+          const paymentResponse = await createPostBookingPayment(bookingForPayment, paymentMethod)
+
+          if (paymentResponse?.code === 200 && paymentResponse.data?.url) {
+            toast.info('Đang chuyển sang cổng thanh toán MOMO...')
+            window.location.assign(paymentResponse.data.url)
+            return
+          }
+
+          toast.error(paymentResponse?.message || 'Không tạo được liên kết thanh toán MOMO')
+          setCurrentStep(4)
+          reset()
+          return
+        }
+
         toast.success('Đặt tour thành công! Chúng tôi sẽ liên hệ bạn sớm.')
         reset()
         setCurrentStep(1)
@@ -172,16 +250,55 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
     }
   }
 
-  const isStep2Valid = contactFullname && contactEmail && contactPhone && contactAddress && selectedDetail
+  const hasValidTravelerCount = totalTravelers > 0 && totalTravelers <= remainingSeats
+  const isStep2Valid =
+    contactFullname &&
+    contactEmail &&
+    contactPhone &&
+    contactAddress &&
+    contactAddress.trim().length >= 5 &&
+    selectedDetail &&
+    hasValidTravelerCount
   const isStep3Valid = selectedPaymentMethod
-
-  console.log('[DEBUG] isStep3Valid:', isStep3Valid, 'selectedPaymentMethod:', selectedPaymentMethod)
-  console.log('[DEBUG] Form errors:', errors)
 
   const handleNextStep = () => {
     if (currentStep === 2 && !isStep2Valid) {
-      toast.error('Vui lòng điền đầy đủ thông tin khách hàng')
-      return
+      if (!contactFullname) {
+        toast.error('Vui lòng nhập họ và tên')
+        return
+      }
+      if (!contactEmail) {
+        toast.error('Vui lòng nhập email')
+        return
+      }
+      if (!contactPhone) {
+        toast.error('Vui lòng nhập số điện thoại')
+        return
+      }
+      if (contactPhone.length < 9 || contactPhone.length > 11) {
+        toast.error('Số điện thoại phải từ 9 đến 11 ký tự')
+        return
+      }
+      if (!contactAddress) {
+        toast.error('Vui lòng nhập địa chỉ')
+        return
+      }
+      if (contactAddress.trim().length < 5) {
+        toast.error('Địa chỉ phải ≥ 5 ký tự')
+        return
+      }
+      if (totalTravelers <= 0) {
+        toast.error('Vui lòng chọn ít nhất 1 khách')
+        return
+      }
+      if (totalTravelers > remainingSeats) {
+        toast.error(`Số khách vượt quá số chỗ còn lại (${remainingSeats})`)
+        return
+      }
+      if (!selectedDetail) {
+        toast.error('Vui lòng chọn đợt khởi hành')
+        return
+      }
     }
     if (currentStep < 4) setCurrentStep(currentStep + 1)
   }
@@ -236,8 +353,7 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
           {/* Left Section - Form */}
           <div className="lg:col-span-2">
             <form
-              onSubmit={handleSubmit(onSubmit, (fieldErrors) => {
-                console.log('[DEBUG] Validation errors:', fieldErrors)
+              onSubmit={handleSubmit(onSubmit, () => {
                 toast.error('Vui lòng điền đầy đủ và chính xác tất cả các trường')
               })}
             >
@@ -373,18 +489,14 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
                   <div className="rounded-lg border border-slate-200 p-4">
                     <h3 className="mb-3 font-semibold text-slate-900">Travelers</h3>
                     <div className="space-y-2">
-                      {travelerOptions.map((option, idx) => {
-                        const derived = derivedBookingItems[idx]
-
-                        return (
-                          <div key={option.priceType} className="flex items-center justify-between text-sm">
-                            <span className="text-slate-600">
-                              {option.priceType === PriceType.ADULT ? 'Người lớn' : 'Trẻ em'} ({derived.quantity}x)
-                            </span>
-                            <span className="font-semibold text-slate-900">{formatVnd(derived.total)}</span>
-                          </div>
-                        )
-                      })}
+                      {derivedBookingItems.map((item) => (
+                        <div key={item.priceType} className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">
+                            {item.priceType === PriceType.ADULT ? 'Người lớn' : 'Trẻ em'} ({item.quantity}x)
+                          </span>
+                          <span className="font-semibold text-slate-900">{formatVnd(item.total)}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -467,7 +579,6 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
                     <button
                       type="submit"
                       disabled={isSubmitting || !isStep3Valid}
-                      onClick={() => console.log('[DEBUG] Submit button clicked', { isSubmitting, isStep3Valid })}
                       className="flex-1 rounded-lg bg-orange-600 py-2 font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
                     >
                       {isSubmitting ? 'Processing...' : 'Proceed to Payment'}
@@ -528,10 +639,6 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
                   <span>Subtotal</span>
                   <span className="font-semibold text-slate-900">{formatVnd(totalPrice)}</span>
                 </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Taxes & Fees</span>
-                  <span className="font-semibold text-slate-900">{formatVnd(taxFee)}</span>
-                </div>
                 <div className="flex justify-between border-t border-slate-200 pt-2 text-lg font-bold text-blue-600">
                   <span>Total</span>
                   <span>{formatVnd(finalTotal)}</span>
@@ -542,7 +649,6 @@ export default function BookingModal({ tour, isOpen, onClose }: BookingModalProp
                 <button
                   type="button"
                   onClick={() => {
-                    console.log('[DEBUG] Summary button clicked')
                     handleSubmit(onSubmit)()
                   }}
                   disabled={isSubmitting}

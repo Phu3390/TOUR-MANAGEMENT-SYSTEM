@@ -2,6 +2,7 @@ D:\Project_HTTT\TOUR-MANAGEMENT-SYSTEM\common\src\main\java\com\example\common\d
 D:\Project_HTTT\TOUR-MANAGEMENT-SYSTEM\common\src\main\java\com\example\common\dto\BaseQueryRequest.java
 D:\Project_HTTT\TOUR-MANAGEMENT-SYSTEM\common\src\main\java\com\example\common\dto\BookingQueryRequest.java
 D:\Project_HTTT\TOUR-MANAGEMENT-SYSTEM\common\src\main\java\com\example\common\dto\PageResponse.java
+D:\Project_HTTT\TOUR-MANAGEMENT-SYSTEM\common\src\main\java\com\example\common\dto\ReviewQueryRequest.java
 D:\Project_HTTT\TOUR-MANAGEMENT-SYSTEM\common\src\main\java\com\example\common\dto\RoleQueryRequest.java
 D:\Project_HTTT\TOUR-MANAGEMENT-SYSTEM\common\src\main\java\com\example\common\dto\TourQueryRequest.java
 D:\Project_HTTT\TOUR-MANAGEMENT-SYSTEM\common\src\main\java\com\example\common\dto\UserQueryRequest.java

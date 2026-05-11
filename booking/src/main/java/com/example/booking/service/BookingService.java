@@ -20,8 +20,10 @@ import com.example.booking.dto.request.BookingRequest;
 import com.example.booking.dto.request.BookingVoucherRequest;
 import com.example.booking.dto.request.CreateBookingRequest;
 import com.example.booking.dto.request.PaymentRequest;
+import com.example.booking.dto.request.isValidBookingRequest;
 import com.example.booking.dto.response.BookingResponse;
 import com.example.booking.dto.response.TourPriceTypeResponse;
+import com.example.booking.dto.response.isValidBookingResponse;
 import com.example.booking.entity.Booking;
 import com.example.booking.entity.BookingItem;
 import com.example.booking.entity.BookingVoucher;
@@ -104,9 +106,25 @@ public class BookingService {
         }
         return response;
     }
+    
+    public isValidBookingResponse isValidBooking(isValidBookingRequest req) {
+
+        List<Booking> bookings = repository.findByTourIdAndUserId(
+                req.getTourId(),
+                req.getUserId());
+        boolean isValid = bookings.stream()
+                .anyMatch(b -> b.getStatus() == BookingStatus.CONFIRMED);
+
+        return isValidBookingResponse.builder()
+                .isValid(isValid)
+                .build();
+    }
 
     private BigDecimal calculateDiscount(BigDecimal total, Voucher voucher) {
         BigDecimal discount = BigDecimal.ZERO;
+        if (voucher == null) {
+            return discount;
+        }
         if (voucher.getDiscountPercent() != null) {
 
             discount = total.multiply(
@@ -185,7 +203,9 @@ public class BookingService {
         booking.setTotalPrice(totalPrice);
 
         // update lại quantity voucher
-        voucherService.updateStock(voucher.getId(), voucher.getQuantity() - 1);
+        if (voucher != null) {
+            voucherService.updateStock(voucher.getId(), voucher.getQuantity() - 1);
+        }
 
         // ===== 6. expired =====
         PaymentMethod method = request.getPaymentRequests().get(0).getMethod();
@@ -288,7 +308,7 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse verifyPayment(UUID paymentId) {
+    public BookingResponse verifyPayment(UUID paymentId, String vnp_ResponseCode) {
 
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_FOUND));
@@ -303,8 +323,9 @@ public class BookingService {
             throw new AppException(ErrorCode.PAYMENT_ALREADY_VERIFIED);
         }
 
+        payment.setPaidAt(LocalDateTime.now());
         payment.setStatus(PaymentStatus.SUCCESS);
-
+        payment.setTransactionCode(vnp_ResponseCode);
         booking.setStatus(BookingStatus.CONFIRMED);
 
         paymentRepository.save(payment);

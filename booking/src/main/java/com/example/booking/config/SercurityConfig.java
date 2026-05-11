@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.client.RestTemplate;
 
 import com.example.common.dto.ApiResponse;
 import com.example.common.exception.ErrorCode;
@@ -31,7 +32,7 @@ public class SercurityConfig {
             "/api/tours/login",
             "/api/tours/signup",
             "/api/tours/introspect",
-            "/api/tours/logout"
+            "/api/tours/logout",
     };
 
     @Autowired
@@ -44,6 +45,8 @@ public class SercurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/vnpay/vnpay-return").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/momo/return").permitAll()
                         .anyRequest().authenticated())
 
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -77,6 +80,11 @@ public class SercurityConfig {
         JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
         authenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return authenticationConverter;
+    }
+
+        @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 
 }

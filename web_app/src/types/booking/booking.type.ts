@@ -61,3 +61,5 @@ export interface BookingQueryRequest extends BaseQueryRequest {
 export type PageBookingResponse = ApiResponse<PageResponse<BookingResponse>>
 
 export type BookingDetailResponse = ApiResponse<BookingResponse>
+
+export type ListBookingDetailResponse = ApiResponse<BookingResponse[]>

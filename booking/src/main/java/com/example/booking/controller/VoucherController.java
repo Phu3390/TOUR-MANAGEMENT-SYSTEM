@@ -59,4 +59,6 @@ public class VoucherController {
     public void editStatus(@PathVariable UUID id, @RequestBody String status) {
         voucherService.editStatus(id, status);
     }
+
+    
 }

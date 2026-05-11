@@ -1,4 +1,4 @@
-import type { BookingDetailResponse, BookingQueryRequest, PageBookingResponse } from '../../types/booking/booking.type'
+import type { BookingDetailResponse, BookingQueryRequest, ListBookingDetailResponse, PageBookingResponse } from '../../types/booking/booking.type'
 import type { CreateBookingRequest } from '../../types/booking/create-booking.type'
 import api from '../axios'
 
@@ -10,6 +10,11 @@ export async function filterBookings(payload: BookingQueryRequest): Promise<Page
 export async function getById(bookingId: string): Promise<BookingDetailResponse> {
   const res = await api.get(`/bookings/booking/bookingId/${bookingId}`)
   return res.data as BookingDetailResponse
+}
+
+export async function getMe(): Promise<ListBookingDetailResponse> {
+  const res = await api.get(`/bookings/booking/me`)
+  return res.data as ListBookingDetailResponse
 }
 
 export async function confirmBooking(booking_id: string): Promise<BookingDetailResponse> {

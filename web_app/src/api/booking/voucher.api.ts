@@ -11,7 +11,7 @@ export async function createVoucher(payload: VoucherRequest): Promise<DetailVouc
   return res.data as DetailVoucherResponse
 }
 
-export async function updateVoucher(id : string,payload: VoucherRequest): Promise<DetailVoucherResponse> {
+export async function updateVoucher(id : string, payload: VoucherRequest): Promise<DetailVoucherResponse> {
   const res = await api.put(`/bookings/voucher/${id}`, payload)
   return res.data as DetailVoucherResponse
 }
@@ -22,5 +22,10 @@ export async function editStatus(id: string, status: string): Promise<DetailVouc
       'Content-Type': 'text/plain',
     },
   })
+  return res.data as DetailVoucherResponse
+}
+
+export async function getVoucherByCode(code: string): Promise<DetailVoucherResponse> {
+  const res = await api.get(`/bookings/voucher/${code}`)
   return res.data as DetailVoucherResponse
 }

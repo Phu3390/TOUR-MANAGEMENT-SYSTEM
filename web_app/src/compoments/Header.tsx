@@ -88,11 +88,8 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
               <Link to="/client/tours" className="rounded-md px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
                 Tours
               </Link>
-              <Link to="/client/destinations" className="rounded-md px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                Điểm đến
-              </Link>
               <Link to="/client/dashboard" className="rounded-md px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                Dashboard
+                Lịch Sử
               </Link>
             </div>
 
@@ -109,7 +106,7 @@ export default function Header({ onToggleMobileSidebar }: HeaderProps) {
               </button>
 
               <Link
-                to="/client/book"
+                to="/client/tours"
                 className="inline-flex rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
               >
                 Book Now

@@ -56,8 +56,9 @@ public enum ErrorCode {
     INVALID_PAYMENT_STATUS(1045, "Trạng thái thanh toán không hợp lệ", 400),
     VOUCHER_ONLY_ONE_DISCOUNT_TYPE(1046, "Chỉ được nhập một trong hai loại giảm giá", 400),
     VOUCHER_DATE_INVALID(1047, "Ngày bắt đầu phải trước ngày kết thúc", 400),
-    VOUCHER_START_DATE_INVALID(1048, "Ngày bắt đầu phải sau ngày hiện tại", 400);
-
+    VOUCHER_START_DATE_INVALID(1048, "Ngày bắt đầu phải sau ngày hiện tại", 400),
+    INVALID_REVIEW(1049, "Bạn không có booking hợp lệ để đánh giá tour này", 400);
+    
     private final int code;
     private final String message;
     private final int status;

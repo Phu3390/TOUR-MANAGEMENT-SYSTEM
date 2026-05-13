@@ -2,6 +2,7 @@ package com.example.auth.service.Auth;
 
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.StringJoiner;
@@ -107,17 +108,18 @@ public class AuthService {
                 .build();
     }
 
-    // public void logout(LogOutRequest logOutRequest) throws JOSEException, ParseException {
-    //     var signToken = verifyToken(logOutRequest.getToken());
-    //     String jit = signToken.getJWTClaimsSet().getJWTID();
-    //     java.util.Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+    // public void logout(LogOutRequest logOutRequest) throws JOSEException,
+    // ParseException {
+    // var signToken = verifyToken(logOutRequest.getToken());
+    // String jit = signToken.getJWTClaimsSet().getJWTID();
+    // java.util.Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
 
-    //     ListToken listToken = ListToken.builder()
-    //             .id(jit)
-    //             .expiryTime(expiryTime)
-    //             .build();
+    // ListToken listToken = ListToken.builder()
+    // .id(jit)
+    // .expiryTime(expiryTime)
+    // .build();
 
-    //     listTokenRepository.save(listToken);
+    // listTokenRepository.save(listToken);
     // }
 
     public SignedJWT verifyToken(String token) throws JOSEException, ParseException {
@@ -132,11 +134,13 @@ public class AuthService {
         if (!verified && expiryTime.after(new java.util.Date()))
             throw new AppException(ErrorCode.UNAUTHORIZED);
         // if (listTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
-        //     throw new AppException(ErrorCode.UNAUTHORIZED);
+        // throw new AppException(ErrorCode.UNAUTHORIZED);
         return signedJWT;
     }
 
     public String genarateToken(User user) {
+        System.out.println("USER = " + user);
+        System.out.println("ROLE = " + user.getRole());
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getEmail())
@@ -153,21 +157,70 @@ public class AuthService {
             jwsObject.sign(new MACSigner(SECRET_KEY.getBytes()));
             return jwsObject.serialize();
         } catch (Exception e) {
-            throw new RuntimeException("Error signing the token", e);
+            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
-    private String buildScope(User user) {
-        StringJoiner stringJoiner = new StringJoiner(" ");
+    // private String buildScope(User user) {
+    //     StringJoiner stringJoiner = new StringJoiner(" ");
 
-        Role role = user.getRole();
+    //     Role role = user.getRole();
 
-        if (role != null && role.getRolePermissions() != null) {
-            role.getRolePermissions().forEach(ct -> {
-                String scope = ct.getPermission().getName() + "_" + ct.getAction();
-                stringJoiner.add(scope);
-            });
+    //     if (role != null && role.getRolePermissions() != null) {
+    //         role.getRolePermissions().forEach(ct -> {
+    //             String scope = ct.getPermission().getName() + "_" + ct.getAction();
+    //             stringJoiner.add(scope);
+    //         });
+    //     }
+    //     return stringJoiner.toString();
+    // }
+
+    public AuthResponse loginWithGoogle(String email,
+            String fullName,
+            Boolean emailVerified) {
+        System.out.println("LOGIN GOOGLE RUNNING");
+        System.out.println(email);
+        if (fullName == null || fullName.isBlank()) {
+            fullName = email;
         }
-        return stringJoiner.toString();
+
+        if (!Boolean.TRUE.equals(emailVerified)) {
+            throw new AppException(ErrorCode.GOOGLE_EMAIL_NOT_VERIFIED);
+        }
+
+        User user = repository.findByEmailWithRole(email).orElse(null);
+        if (user != null) {
+            if (user.getPassword() != null && !user.getPassword().isBlank()) {
+                throw new AppException(ErrorCode.NOT_LOGIN_WITH_GOOGLE);
+            }
+        } else {
+            user = createUserWithGoogleToken(email, fullName);
+        }
+        String token = genarateToken(user);
+
+        return AuthResponse.builder()
+                .token(token)
+                .authentication(true)
+                .build();
+    }
+
+    public User createUserWithGoogleToken(String email, String fullName) {
+        Role userRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXITS));
+        User newUser = new User();
+
+        newUser.setEmail(email);
+
+        newUser.setPassword(null);
+
+        newUser.setFullName(fullName);
+
+        newUser.setRole(userRole);
+
+        newUser.setStatus(Status.ACTIVE);
+
+        newUser.setCreatedAt(LocalDateTime.now());
+
+        return repository.save(newUser);
     }
 }

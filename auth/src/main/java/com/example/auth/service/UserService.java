@@ -64,6 +64,10 @@ public class UserService {
         return userMapper.toList(userRepository.findByStatus(Status.ACTIVE));
     }
 
+    public User getByEmail(String email) {
+        return userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_EXITS));
+    }
+
     public UserResponse getById(UUID id) {
         return userMapper.toResponse(
                 userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_EXITS)));

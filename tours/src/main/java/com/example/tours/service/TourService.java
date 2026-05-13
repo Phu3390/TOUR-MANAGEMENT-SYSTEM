@@ -64,7 +64,6 @@ public class TourService {
 
             SpecificationBuilder<Tour> builder = new SpecificationBuilder<>();
 
-            // 🔍 keyword
             builder.keyword(
                     root,
                     cb,
@@ -73,27 +72,25 @@ public class TourService {
                     "shortDesc",
                     "longDesc");
 
-            // 📍 location
             builder.equal(
                     root,
                     cb,
                     "location",
                     req.getLocation());
 
-            // ⏱ duration
+
             builder.equal(
                     root,
                     cb,
                     "duration",
                     req.getDuration());
-            // 🏷️ tourType
+
             builder.equal(
                     root,
                     cb,
                     "tourType",
                     req.getTourType());
 
-            // ⭐ rating
             builder.ge(
                     root,
                     cb,
@@ -106,7 +103,6 @@ public class TourService {
                     "rating",
                     req.getMaxRating());
 
-            // 🔒 status từ request
             builder.equal(
                     root,
                     cb,
@@ -115,7 +111,6 @@ public class TourService {
 
             List<Predicate> extraPredicates = new ArrayList<>();
 
-            // 💰 price
             if (req.getMinPrice() != null || req.getMaxPrice() != null) {
 
                 Join<Tour, TourDetail> detailJoin = root.join("tourDetails", JoinType.LEFT);

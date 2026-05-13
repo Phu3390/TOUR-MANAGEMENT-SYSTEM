@@ -2,24 +2,18 @@ package com.example.booking.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
+
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import com.example.booking.client.TourClient;
-import com.example.booking.dto.request.BookingItemRequest;
 import com.example.booking.dto.request.BookingRequest;
-import com.example.booking.dto.request.BookingVoucherRequest;
 import com.example.booking.dto.request.CreateBookingRequest;
-import com.example.booking.dto.request.PaymentRequest;
 import com.example.booking.dto.request.isValidBookingRequest;
 import com.example.booking.dto.response.BookingResponse;
 import com.example.booking.dto.response.TourPriceTypeResponse;
@@ -31,7 +25,6 @@ import com.example.booking.entity.Payment;
 import com.example.booking.entity.Voucher;
 import com.example.booking.mapper.BookingItemMapper;
 import com.example.booking.mapper.BookingMapper;
-import com.example.booking.mapper.BookingVoucherMapper;
 import com.example.booking.mapper.PaymentMapper;
 import com.example.booking.repository.BookingItemRepository;
 import com.example.booking.repository.BookingRepository;
@@ -149,7 +142,6 @@ public class BookingService {
             BigDecimal price = priceMap.get(type);
             item.setUnitPrice(price);
         }
-        // return items;
     }
 
     public BigDecimal calculateTotalPrice(
@@ -172,21 +164,16 @@ public class BookingService {
     @Transactional
     public BookingResponse createBooking(CreateBookingRequest request) {
 
-        // ===== 1. Validate =====
         if (request.getPaymentRequests() == null || request.getPaymentRequests().isEmpty()) {
             throw new AppException(ErrorCode.PAYMENT_REQUIRED);
         }
-
-        // ===== 2. Map booking =====
         Booking booking = mapper.toEntity(request.getBookingRequest());
         booking.setUserId(SecurityUtils.getCurrentUserId());
         booking.setStatus(BookingStatus.PENDING);
 
-        // ===== 3. Create items (set unitPrice từ Tour Service) =====
         List<BookingItem> items = bookingItemService.createItems(
                 request.getBookingItems(), booking);
 
-        // ===== 4. Lấy voucher theo code (nếu có) =====
         Voucher voucher = null;
 
         if (request.getCode() != null && !request.getCode().isBlank()) {
@@ -197,36 +184,33 @@ public class BookingService {
                     .orElseThrow(() -> new AppException(ErrorCode.VOUCHER_NOT_FOUND));
         }
 
-        // ===== 5. Tính giá =====
         calculateUnitPrice(items, booking.getTourDetailId());
         BigDecimal totalPrice = calculateTotalPrice(items, voucher);
         booking.setTotalPrice(totalPrice);
 
-        // update lại quantity voucher
         if (voucher != null) {
             voucherService.updateStock(voucher.getId(), voucher.getQuantity() - 1);
         }
 
-        // ===== 6. expired =====
         PaymentMethod method = request.getPaymentRequests().get(0).getMethod();
         booking.setExpiredAt(paymentService.calculateExpiredAt(method));
 
-        // ===== 7. Save booking =====
+
         Booking savedBooking = repository.save(booking);
 
         int quantity = items.stream().mapToInt(BookingItem::getQuantity).sum();
         updateStock(savedBooking.getTourDetailId(), quantity);
 
-        // ===== 8. Save items =====
+
         items.forEach(i -> i.setBooking(savedBooking));
         bookingItemRepository.saveAll(items);
 
-        // ===== 9. Save payment =====
+
         paymentRepository.saveAll(
                 paymentService.createPayments(request.getPaymentRequests(), savedBooking));
 
         if (voucher != null) {
-            // ===== 10. Save booking-voucher =====
+
             BookingVoucher bv = new BookingVoucher();
             bv.setBooking(savedBooking);
             bv.setVoucher(voucher);

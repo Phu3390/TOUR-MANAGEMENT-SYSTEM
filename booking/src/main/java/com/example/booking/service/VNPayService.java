@@ -10,12 +10,6 @@ import org.springframework.stereotype.Service;
 
 import com.example.booking.config.VNPayConfig;
 import com.example.booking.dto.request.VnPayRequest;
-import com.example.booking.dto.response.VnPayResponse;
-import com.example.booking.entity.Booking;
-import com.example.booking.repository.BookingRepository;
-import com.example.common.exception.AppException;
-import com.example.common.exception.ErrorCode;
-
 import java.io.IOException;
 import java.text.Normalizer;
 import java.text.SimpleDateFormat;
@@ -59,8 +53,6 @@ public class VNPayService {
         vnpParams.put("vnp_Amount", String.valueOf(vnp_Amount));
         vnpParams.put("vnp_CurrCode", "VND");
 
-        // // bankCode optional
-        // vnpParams.put("vnp_BankCode", "NCB");
 
         vnpParams.put("vnp_TxnRef", vnp_TxnRef);
 

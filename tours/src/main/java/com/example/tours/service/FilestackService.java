@@ -35,7 +35,6 @@ public class FilestackService {
 
             String handle = uploadedFile.getHandle();
 
-            // Filestack CDN URL chuẩn
             String url = "https://cdn.filestackcontent.com/" + handle;
 
             return new UploadResponse(

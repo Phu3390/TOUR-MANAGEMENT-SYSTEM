@@ -35,7 +35,6 @@ public class MomoService {
                         String orderInfo = "momopay";
                         String amount = String.valueOf(req.getAmount());
 
-                        // PHẢI CÓ ipnUrl trong body + rawHash
                         String ipnUrl = momoConfig.getReturnUrl();
 
                         String rawHash = "accessKey=" + momoConfig.getAccessKey() +
@@ -120,7 +119,6 @@ public class MomoService {
 
         public boolean verifyPayment(HttpServletRequest request) {
 
-                // MoMo return/ipn dùng đúng thứ tự field này
                 String rawHash = "accessKey=" + momoConfig.getAccessKey() +
                                 "&amount=" + defaultString(request.getParameter("amount")) +
                                 "&extraData=" + defaultString(request.getParameter("extraData")) +

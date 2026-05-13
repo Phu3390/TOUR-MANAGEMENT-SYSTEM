@@ -16,7 +16,6 @@ import com.example.common.dto.VoucherQueryRequest;
 import com.example.common.exception.AppException;
 import com.example.common.exception.ErrorCode;
 import com.example.common.utils.PageableUtil;
-import com.example.common.utils.SpecificationBuilder;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
@@ -42,7 +41,7 @@ public class VoucherService {
 
                         Predicate predicate = cb.conjunction();
 
-                        // ===== Keyword =====
+                   
                         if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
                                 String keyword = "%" + request.getKeyword().toLowerCase() + "%";
 
@@ -53,21 +52,18 @@ public class VoucherService {
                                                                 cb.like(cb.lower(root.get("status")), keyword)));
                         }
 
-                        // ===== Code =====
                         if (request.getCode() != null && !request.getCode().trim().isEmpty()) {
                                 predicate = cb.and(
                                                 predicate,
                                                 cb.equal(root.get("code"), request.getCode()));
                         }
 
-                        // ===== Status =====
                         if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
                                 predicate = cb.and(
                                                 predicate,
                                                 cb.equal(root.get("status"), request.getStatus()));
                         }
 
-                        // ===== Discount Percent =====
                         if (request.getMinDiscountPercent() != null) {
                                 predicate = cb.and(
                                                 predicate,
@@ -84,7 +80,6 @@ public class VoucherService {
                                                                 request.getMaxDiscountPercent()));
                         }
 
-                        // ===== Discount Amount =====
                         if (request.getMinDiscountAmount() != null) {
                                 predicate = cb.and(
                                                 predicate,
@@ -101,7 +96,6 @@ public class VoucherService {
                                                                 request.getMaxDiscountAmount()));
                         }
 
-                        // ===== Quantity =====
                         if (request.getMinQuantity() != null) {
                                 predicate = cb.and(
                                                 predicate,
@@ -118,7 +112,6 @@ public class VoucherService {
                                                                 request.getMaxQuantity()));
                         }
 
-                        // ===== Start Date =====
                         if (request.getStartDateFrom() != null) {
                                 predicate = cb.and(
                                                 predicate,
@@ -135,7 +128,6 @@ public class VoucherService {
                                                                 request.getStartDateTo()));
                         }
 
-                        // ===== End Date =====
                         if (request.getEndDateFrom() != null) {
                                 predicate = cb.and(
                                                 predicate,
@@ -152,7 +144,6 @@ public class VoucherService {
                                                                 request.getEndDateTo()));
                         }
 
-                        // ===== Created At =====
                         if (request.getCreatedAtFrom() != null) {
                                 predicate = cb.and(
                                                 predicate,
@@ -201,18 +192,15 @@ public class VoucherService {
                 boolean hasPercent = req.getDiscountPercent() != null;
                 boolean hasAmount = req.getDiscountAmount() != null;
 
-                // Không được nhập cả 2
                 if (hasPercent && hasAmount) {
                         throw new AppException(ErrorCode.VOUCHER_ONLY_ONE_DISCOUNT_TYPE);
                 }
 
-                // End phải sau Start
                 if (req.getEndDate().isBefore(req.getStartDate())
                                 || req.getEndDate().isEqual(req.getStartDate())) {
                         throw new AppException(ErrorCode.VOUCHER_DATE_INVALID);
                 }
 
-                // Start không được ở quá khứ (nếu cần áp dụng)
                 if (req.getStartDate().isBefore(LocalDateTime.now())) {
                         throw new AppException(ErrorCode.VOUCHER_START_DATE_INVALID);
                 }
@@ -229,11 +217,10 @@ public class VoucherService {
                 boolean hasPercent = req.getDiscountPercent() != null;
                 boolean hasAmount = req.getDiscountAmount() != null;
 
-                // Không được nhập cả 2
                 if (hasPercent && hasAmount) {
                         throw new AppException(ErrorCode.VOUCHER_ONLY_ONE_DISCOUNT_TYPE);
                 }
-                      // End phải sau Start
+                    
                 if (req.getEndDate().isBefore(req.getStartDate())
                                 || req.getEndDate().isEqual(req.getStartDate())) {
                         throw new AppException(ErrorCode.VOUCHER_DATE_INVALID);

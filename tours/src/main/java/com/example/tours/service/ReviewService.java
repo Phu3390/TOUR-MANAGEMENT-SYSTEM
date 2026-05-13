@@ -54,7 +54,6 @@ public class ReviewService {
 
             SpecificationBuilder<Review> builder = new SpecificationBuilder<>();
 
-            // keyword search reviewerName + content
             builder.keyword(
                     root,
                     cb,
@@ -62,7 +61,6 @@ public class ReviewService {
                     "reviewerName",
                     "content");
 
-            // reviewer name exact ignore case
             if (req.getReviewerName() != null && !req.getReviewerName().trim().isEmpty()) {
                 builder.equal(
                         root,
@@ -76,8 +74,8 @@ public class ReviewService {
                 builder.joinEqual(
                         root,
                         cb,
-                        "tour", // tên object trong entity Review
-                        "id", // field trong Tour
+                        "tour", 
+                        "id",
                         UUID.fromString(req.getTourId()));
             }
             // filter userId
@@ -150,7 +148,7 @@ public class ReviewService {
         List<Review> reviews = repository.findByTourId(tourId);
         int totalReviews = reviews.size();
         double average = reviews.stream()
-                .filter(review -> review.getRating() != null) // tránh null
+                .filter(review -> review.getRating() != null) 
                 .mapToInt(Review::getRating)
                 .average()
                 .orElse(0.0);

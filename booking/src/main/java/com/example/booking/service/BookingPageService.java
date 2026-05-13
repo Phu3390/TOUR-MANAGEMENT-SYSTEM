@@ -40,7 +40,6 @@ public class BookingPageService {
 
             Predicate predicate = cb.conjunction();
 
-            // ===== Keyword =====
             if (req.getKeyword() != null && !req.getKeyword().trim().isEmpty()) {
 
                 String keyword = "%" + req.getKeyword().trim().toLowerCase() + "%";
@@ -62,7 +61,6 @@ public class BookingPageService {
                         cb.or(byName, byEmail, byPhone));
             }
 
-            // ===== Booking =====
             if (req.getUserId() != null) {
                 predicate = cb.and(
                         predicate,
@@ -87,7 +85,6 @@ public class BookingPageService {
                         cb.equal(root.get("status"), req.getBookingStatus()));
             }
 
-            // ===== Price =====
             if (req.getMinTotalPrice() != null) {
                 predicate = cb.and(
                         predicate,
@@ -104,7 +101,6 @@ public class BookingPageService {
                                 req.getMaxTotalPrice()));
             }
 
-            // ===== Created =====
             if (req.getCreatedFrom() != null) {
                 predicate = cb.and(
                         predicate,
@@ -121,7 +117,6 @@ public class BookingPageService {
                                 req.getCreatedTo()));
             }
 
-            // ===== Expired =====
             if (req.getExpiredFrom() != null) {
                 predicate = cb.and(
                         predicate,
@@ -146,7 +141,6 @@ public class BookingPageService {
                                 LocalDateTime.now()));
             }
 
-            // ===== Payment =====
             if (req.getPaymentStatus() != null || req.getPaymentMethod() != null) {
 
                 Join<Object, Object> paymentJoin = root.join("payments", JoinType.LEFT);
@@ -168,7 +162,6 @@ public class BookingPageService {
                 }
             }
 
-            // ===== Voucher =====
             if (req.getVoucherCode() != null &&
                     !req.getVoucherCode().trim().isEmpty()) {
 
@@ -215,11 +208,4 @@ public class BookingPageService {
                 .content(content)
                 .build();
     }
-
-    // public BookingResponse getBookingDetail(UUID bookingId) {
-    //     Booking booking = bookingRepository.findById(bookingId)
-    //             .orElseThrow(() -> new RuntimeException("Booking not found"));
-
-    //     return bookingMapper.toResponse(booking);
-    // }
 }

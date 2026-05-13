@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.auth.dto.request.Auth.GoogleLoginRequest;
 import com.example.auth.dto.request.Auth.IntrospectRequset;
 import com.example.auth.dto.request.Auth.LoginRequest;
 import com.example.auth.dto.request.Auth.SignupRequest;
@@ -34,13 +35,15 @@ public class AuthController {
     }
 
     // @PostMapping("/introspect")
-    // public IntrospectResponse introspect(@RequestBody IntrospectRequset request) throws JOSEException, ParseException {
-    //     return authService.introspect(request);
+    // public IntrospectResponse introspect(@RequestBody IntrospectRequset request)
+    // throws JOSEException, ParseException {
+    // return authService.introspect(request);
     // }
 
     // @PostMapping("/logout")
-    // public void logout(@RequestBody LogOutRequest request) throws JOSEException, ParseException {
-    //     authService.logout(request);
+    // public void logout(@RequestBody LogOutRequest request) throws JOSEException,
+    // ParseException {
+    // authService.logout(request);
     // }
 
 }

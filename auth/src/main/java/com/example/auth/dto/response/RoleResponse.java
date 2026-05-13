@@ -21,5 +21,4 @@ public class RoleResponse {
     UUID id;
     String name;
     Status status;
-    List<RolePermissionResponse> rolePermissions;
 }

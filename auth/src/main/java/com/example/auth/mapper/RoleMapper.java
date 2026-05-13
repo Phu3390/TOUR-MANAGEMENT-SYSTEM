@@ -10,7 +10,7 @@ import com.example.auth.dto.response.PageRoleResponse;
 import com.example.auth.dto.response.RoleResponse;
 import com.example.auth.entity.Role;
 
-@Mapper(componentModel = "spring",uses = {RolePermissionMapper.class})  
+@Mapper(componentModel = "spring")  
 public interface RoleMapper {
     Role toEntity(RoleRequest request);
 

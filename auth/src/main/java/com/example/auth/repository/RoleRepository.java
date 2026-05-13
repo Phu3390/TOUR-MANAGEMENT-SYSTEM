@@ -18,9 +18,4 @@ public interface RoleRepository extends JpaRepository<Role, UUID>, JpaSpecificat
     
     List<Role> findByStatus(Status status);
     
-    @Query("SELECT r FROM Role r WHERE r.name LIKE %:name%")
-    List<Role> searchByName(@Param("name") String name);
-    
-    @Query("SELECT r FROM Role r LEFT JOIN FETCH r.rolePermissions WHERE r.id = :id")
-    Optional<Role> findByIdWithPermissions(@Param("id") UUID id);
 }

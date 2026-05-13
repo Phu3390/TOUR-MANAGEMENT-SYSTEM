@@ -36,7 +36,7 @@ public class Role {
     @Column(name = "status")
     private Status status = Status.ACTIVE;
 
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<RolePermission> rolePermissions;
+    // @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+    // @JsonIgnore
+    // private List<RolePermission> rolePermissions;
 }

@@ -12,10 +12,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.auth.dto.request.UserRequest;
 import com.example.auth.dto.response.UserResponse;
+import com.example.auth.entity.User;
 import com.example.auth.service.UserService;
 import com.example.common.dto.BaseQueryRequest;
 import com.example.common.dto.PageResponse;
@@ -50,6 +52,11 @@ public class UserController {
     public UserResponse getById(@PathVariable UUID id) {
         return userService.getById(id);
     }
+
+     @GetMapping("/email")
+    public User getByEmail(@RequestParam String email) {
+        return userService.getByEmail(email);
+    } 
 
     @GetMapping("/me")
     public UserResponse getMe() {

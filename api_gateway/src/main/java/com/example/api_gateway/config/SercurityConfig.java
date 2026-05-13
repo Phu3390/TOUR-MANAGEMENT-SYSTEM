@@ -33,8 +33,16 @@ public class SercurityConfig {
                         "/api/auth/signup",
                         "/api/auth/introspect",
                         "/api/tours/tour/**",
+                        "/api/auth/login/google",
                         "/api/bookings/vnpay/vnpay-return",
                         "/api/bookings/momo/return",
+                        "/oauth2/**",
+                        "/login/**",
+                        "/error",
+                        "/login/oauth2/**",
+                        "/login/oauth2/code/**",
+                        "/login",
+                        "/favicon.ico"
         };
 
         @Value("${jwt.secret}")

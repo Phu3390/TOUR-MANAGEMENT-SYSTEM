@@ -3,6 +3,7 @@ package com.example.booking.controller;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class BookingItemController {
     private final BookingItemService bookingItemService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{bookingId}")
     public List<BookingItemResponse> getByBookingId(@PathVariable UUID bookingId) {
         return bookingItemService.getByBookingId(bookingId);

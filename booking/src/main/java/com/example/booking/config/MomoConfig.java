@@ -27,9 +27,6 @@ public class MomoConfig {
     @Value("${momo.return-url}")
     private String returnUrl;
 
-    // @Value("${momo.notify-url}")
-    // private String notifyUrl;
-
     public static String hmacSHA256(String key, String data) {
         try {
             Mac hmac = Mac.getInstance("HmacSHA256");

@@ -1,6 +1,5 @@
 package com.example.tours.dto.request;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,37 +19,37 @@ import jakarta.validation.constraints.Min;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TourRequest {
-    
-    @NotBlank(message = "Title is required")
+
+    @NotBlank(message = "TITLE_REQUIRED")
     private String title;
-    
-    @NotBlank(message = "Slug is required")
+
+    @NotBlank(message = "SLUG_REQUIRED")
     private String slug;
-    
-    @NotBlank(message = "Location is required")
+
+    @NotBlank(message = "LOCATION_REQUIRED")
     private String location;
-    
-    @NotNull(message = "Duration is required")
+
+    @NotBlank(message = "DURATION_REQUIRED")
     private String duration;
-    
+
     private String shortDesc;
-    
+
     private String longDesc;
-    
+
     private String imageUrl;
-    
+
     private List<String> gallery;
-    
-    @Min(value = 0, message = "Rating must be between 0 and 5")
-    @Max(value = 5, message = "Rating must be between 0 and 5")
-    private Double rating=0.0;
-    
-    @Min(value = 0, message = "Total reviews cannot be negative")
-    private Integer totalReviews=0;
-    
-    @NotNull(message = "Tour type is required")
+
+    @Min(value = 0, message = "RATING_MIN")
+    @Max(value = 5, message = "RATING_MAX")
+    private Double rating = 0.0;
+
+    @Min(value = 0, message = "TOTAL_REVIEWS_MIN")
+    private Integer totalReviews = 0;
+
+    @NotNull(message = "TOUR_TYPE_REQUIRED")
     private TourType tourType;
-    
-    @NotNull(message = "Status is required")
+
+    @NotNull(message = "STATUS_REQUIRED")
     private TourStatus status = TourStatus.ACTIVE;
 }

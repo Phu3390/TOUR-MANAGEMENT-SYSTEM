@@ -17,7 +17,7 @@ public class VoucherExistsValidator implements ConstraintValidator<VoucherExists
     @Override
     public boolean isValid(String code, ConstraintValidatorContext context) {
         if (code == null || code.isBlank())
-            return true; // để @NotBlank xử lý
+            return true; 
         return repo.findByCode(code).isPresent();
     }
 }

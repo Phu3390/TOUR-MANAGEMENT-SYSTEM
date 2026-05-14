@@ -8,6 +8,7 @@ import com.example.booking.validator.voucher.VoucherHasQuantity;
 import com.example.booking.validator.voucher.VoucherNotExpired;
 import com.example.common.exception.ErrorCode;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,8 +19,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateBookingRequest {
+    @Valid
     private BookingRequest bookingRequest;
+
+    @Valid
     private List<BookingItemRequest> bookingItems;
+
+    @Valid
     private List<PaymentRequest> paymentRequests;
 
     @VoucherExists(message = "VOUCHER_NOT_FOUND")

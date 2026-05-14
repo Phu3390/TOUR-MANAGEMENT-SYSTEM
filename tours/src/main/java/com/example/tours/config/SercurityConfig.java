@@ -1,6 +1,9 @@
 package com.example.tours.config;
 
+import javax.crypto.spec.SecretKeySpec;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,6 +17,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import com.example.common.dto.ApiResponse;
 import com.example.common.exception.ErrorCode;
 
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
@@ -29,10 +34,11 @@ public class SercurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/tours/tour/**",
+            "/api/tours/review/filter",
     };
 
-    @Autowired
-    CustomeJwtDecoder customeJwtDecoder;
+    @Value("${jwt.secret}")
+    private String signerkey;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -45,8 +51,9 @@ public class SercurityConfig {
 
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
-                                .decoder(customeJwtDecoder)
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(
+                                        jwtAuthenticationConverter())))
 
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, e) -> {
@@ -64,6 +71,12 @@ public class SercurityConfig {
                         }));
 
         return http.build();
+    }
+
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withSecretKey(
+                new SecretKeySpec(signerkey.getBytes(), "HmacSHA256")).build();
     }
 
     @Bean

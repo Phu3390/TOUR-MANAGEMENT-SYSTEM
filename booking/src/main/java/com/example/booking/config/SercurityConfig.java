@@ -1,6 +1,9 @@
 package com.example.booking.config;
 
+import javax.crypto.spec.SecretKeySpec;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,6 +18,8 @@ import org.springframework.web.client.RestTemplate;
 import com.example.common.dto.ApiResponse;
 import com.example.common.exception.ErrorCode;
 
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
@@ -35,8 +40,9 @@ public class SercurityConfig {
             "/api/tours/logout",
     };
 
-    @Autowired
-    CustomeJwtDecoder customeJwtDecoder;
+
+    @Value("${jwt.secret}")
+    String secret_key;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -51,8 +57,9 @@ public class SercurityConfig {
 
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
-                                .decoder(customeJwtDecoder)
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(
+                                        jwtAuthenticationConverter())))
 
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, e) -> {
@@ -73,6 +80,12 @@ public class SercurityConfig {
     }
 
     @Bean
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withSecretKey(
+                new SecretKeySpec(secret_key.getBytes(), "HmacSHA256")).build();
+    }
+
+    @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
         grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
@@ -82,7 +95,7 @@ public class SercurityConfig {
         return authenticationConverter;
     }
 
-        @Bean
+    @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }

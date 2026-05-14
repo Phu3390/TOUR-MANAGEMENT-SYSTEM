@@ -3,6 +3,7 @@ package com.example.tours.controller;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +13,7 @@ import com.example.tours.dto.request.TourPriceRequest;
 import com.example.tours.dto.response.TourPriceResponse;
 import com.example.tours.service.TourPriceService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -29,23 +31,27 @@ public class TourPriceController {
         return tourPriceService.getAll();
     }
 
+    
     @GetMapping("/{tourDetailId}")
     public List<TourPriceResponse> getByTourDetailId(@PathVariable UUID tourDetailId) {
         return tourPriceService.getByTourDetailId(tourDetailId);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{tourDetailId}")
-    public List<TourPriceResponse> createList(@PathVariable UUID tourDetailId, @RequestBody List<TourPriceRequest> requests) {
+    public List<TourPriceResponse> createList(@PathVariable UUID tourDetailId, @Valid @RequestBody List<TourPriceRequest> requests) {
         return tourPriceService.createList(tourDetailId, requests);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/price/{tourDetailId}")
-    public TourPriceResponse createOne(@PathVariable UUID tourDetailId, @RequestBody TourPriceRequest request) {
+    public TourPriceResponse createOne(@PathVariable UUID tourDetailId, @Valid @RequestBody TourPriceRequest request) {
         return tourPriceService.createOne(tourDetailId, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public TourPriceResponse updateOne(@PathVariable UUID id, @RequestBody TourPriceRequest request) {
+    public TourPriceResponse updateOne(@PathVariable UUID id, @Valid @RequestBody TourPriceRequest request) {
         return tourPriceService.updateOne(id, request);
     }
 

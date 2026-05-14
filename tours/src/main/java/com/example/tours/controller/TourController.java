@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -21,6 +22,7 @@ import com.example.tours.dto.request.TourRequest;
 import com.example.tours.dto.response.TourResponse;
 import com.example.tours.service.TourService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,18 +55,21 @@ public class TourController {
         return tourService.getById(id);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public TourResponse createFullTour(@RequestBody CreateTourRequest req) {
+    public TourResponse createFullTour( @Valid @RequestBody CreateTourRequest req) {
         return tourService.createFullTour(req);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public TourResponse update(@PathVariable UUID id, @RequestBody TourRequest request) {
+    public TourResponse update(@PathVariable UUID id, @Valid @RequestBody TourRequest request) {
         return tourService.update(id, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/status/{id}")
-    public void editActive(@PathVariable UUID id, @RequestBody TourStatus status) {
+    public void editActive(@PathVariable UUID id, @Valid @RequestBody TourStatus status) {
         tourService.EditActive(id, status);
     }
 

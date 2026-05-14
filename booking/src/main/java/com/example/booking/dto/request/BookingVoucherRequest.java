@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import com.example.booking.entity.Booking;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class BookingVoucherRequest {
-    // private UUID booking_id;
+    @NotNull(message = "VOUCHER_ID_REQUIRED")
     private UUID voucher_id;
 }

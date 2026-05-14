@@ -3,6 +3,7 @@ package com.example.booking.controller;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -22,6 +23,7 @@ import com.example.common.dto.BookingQueryRequest;
 import com.example.common.dto.PageResponse;
 import com.example.common.dto.VoucherQueryRequest;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -30,33 +32,39 @@ import lombok.RequiredArgsConstructor;
 public class VoucherController {
     private final VoucherService voucherService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/filter")
     public PageResponse<VoucherResponse> getFilter(@ModelAttribute("req") VoucherQueryRequest req) {
         return voucherService.filter(req);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<VoucherResponse> getAllVouchers() {
         return voucherService.getAllVouchers();
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     @GetMapping("/{code}")
     public VoucherResponse getVoucherByCode(@PathVariable String code) {
         return voucherService.getVoucherByCode(code);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public VoucherResponse create(@RequestBody VoucherRequest req) {
+    public VoucherResponse create(@Valid@RequestBody VoucherRequest req) {
         return voucherService.create(req);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public VoucherResponse update(@PathVariable UUID id, @RequestBody VoucherRequest req) {
+    public VoucherResponse update(@PathVariable UUID id, @Valid @RequestBody VoucherRequest req) {
         return voucherService.update(id, req);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/status/{id}")
-    public void editStatus(@PathVariable UUID id, @RequestBody String status) {
+    public void editStatus(@PathVariable UUID id, @Valid @RequestBody String status) {
         voucherService.editStatus(id, status);
     }
 

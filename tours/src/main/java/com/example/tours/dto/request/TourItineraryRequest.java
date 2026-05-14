@@ -13,14 +13,13 @@ import jakarta.validation.constraints.Min;
 @AllArgsConstructor
 public class TourItineraryRequest {
 
-    
-    @NotNull(message = "Day number is required")
-    @Min(value = 1, message = "Day number must be at least 1")
+    @NotNull(message = "DAY_NUMBER_REQUIRED")
+    @Min(value = 1, message = "DAY_NUMBER_MIN")
     private Integer dayNumber;
-    
-    @NotBlank(message = "Title is required")
+
+    @NotBlank(message = "TITLE_REQUIRED")
     private String title;
-    
-    @NotBlank(message = "Content is required")
+
+    @NotBlank(message = "CONTENT_ITINERARY_REQUIRED")
     private String content;
 }

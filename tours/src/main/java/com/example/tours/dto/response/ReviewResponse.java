@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.example.tours.entity.Tour;
 
 @Data
 @Builder

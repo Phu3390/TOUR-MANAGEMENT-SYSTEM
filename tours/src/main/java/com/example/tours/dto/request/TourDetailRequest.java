@@ -17,23 +17,24 @@ import com.example.common.enums.TourDetailStatus;
 @AllArgsConstructor
 public class TourDetailRequest {
 
-    @NotNull(message = "Capacity is required")
-    @Min(value = 1, message = "Capacity must be at least 1")
+    @NotNull(message = "CAPACITY_REQUIRED")
+    @Min(value = 1, message = "CAPACITY_MIN")
     private Integer capacity;
 
-    @NotNull(message = "Remaining seats is required")
-    @Min(value = 0, message = "Remaining seats cannot be negative")
+    @NotNull(message = "REMAINING_SEATS_REQUIRED")
+    @Min(value = 0, message = "REMAINING_SEATS_MIN")
     private Integer remainingSeats;
 
-    @NotNull(message = "Start date is required")
+    @NotNull(message = "START_DAY_REQUIRED")
     private LocalDate startDay;
 
-    @NotNull(message = "End date is required")
+    @NotNull(message = "END_DAY_REQUIRED")
     private LocalDate endDay;
 
+    @NotNull(message = "START_LOCATION_REQUIRED")
     private String startLocation;
 
-    @NotNull(message = "Status is required")
+    @NotNull(message = "STATUS_REQUIRED")
     private TourDetailStatus status;
 
     private List<TourPriceRequest> prices;

@@ -69,16 +69,15 @@ public class ReviewService {
                         req.getReviewerName());
             }
 
-            // filter tourId
             if (req.getTourId() != null && !req.getTourId().isEmpty()) {
                 builder.joinEqual(
                         root,
                         cb,
-                        "tour", 
+                        "tour",
                         "id",
                         UUID.fromString(req.getTourId()));
             }
-            // filter userId
+
             if (req.getUserId() != null && !req.getUserId().isEmpty()) {
                 builder.equal(
                         root,
@@ -87,7 +86,6 @@ public class ReviewService {
                         UUID.fromString(req.getUserId()));
             }
 
-            // rating range
             builder.ge(root, cb, "rating", req.getMinRating());
             builder.le(root, cb, "rating", req.getMaxRating());
 
@@ -144,11 +142,10 @@ public class ReviewService {
     }
 
     public void updateRatingAverage(UUID tourId) {
-
         List<Review> reviews = repository.findByTourId(tourId);
         int totalReviews = reviews.size();
         double average = reviews.stream()
-                .filter(review -> review.getRating() != null) 
+                .filter(review -> review.getRating() != null)
                 .mapToInt(Review::getRating)
                 .average()
                 .orElse(0.0);

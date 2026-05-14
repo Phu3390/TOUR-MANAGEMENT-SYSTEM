@@ -14,12 +14,11 @@ import com.example.common.enums.PriceType;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TourPriceRequest {
-    
-    @NotNull(message = "Price is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
+    @NotNull(message = "PRICE_REQUIRED")
+    @DecimalMin(value = "0.0", inclusive = false, message = "PRICE_MIN")
     private BigDecimal price;
-    
-    @NotNull(message = "Price type is required")
+
+    @NotNull(message = "PRICE_TYPE_REQUIRED")
     private PriceType priceType;
-    
+
 }

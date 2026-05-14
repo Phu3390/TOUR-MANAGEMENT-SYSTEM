@@ -15,13 +15,13 @@ import com.example.common.exception.ErrorCode;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    // @ExceptionHandler(value = Exception.class)
-    // ResponseEntity<ApiResponse> handleException(Exception e){
-    //     return ResponseEntity.status(ErrorCode.UNKNOWN_ERROR.getStatus()).body(ApiResponse.builder()
-    //             .code(ErrorCode.UNKNOWN_ERROR.getCode())
-    //             .message(ErrorCode.UNKNOWN_ERROR.getMessage())
-    //             .build());
-    // }
+    @ExceptionHandler(value = Exception.class)
+    ResponseEntity<ApiResponse> handleException(Exception e){
+        return ResponseEntity.status(ErrorCode.UNKNOWN_ERROR.getStatus()).body(ApiResponse.builder()
+                .code(ErrorCode.UNKNOWN_ERROR.getCode())
+                .message(ErrorCode.UNKNOWN_ERROR.getMessage())
+                .build());
+    }
 
     @ExceptionHandler(value = AppException.class)
     ResponseEntity<ApiResponse> handleAppException(AppException e) {
@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
                 .build());
     }
 
-        @ExceptionHandler(value = MethodArgumentNotValidException.class)
+    @ExceptionHandler(value = MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse> handleValidation(MethodArgumentNotValidException e) {
 
         String enumkey = e.getFieldError().getDefaultMessage();
@@ -48,6 +48,8 @@ public class GlobalExceptionHandler {
         response.setMessage(errorCode.getMessage());
         return ResponseEntity.status(errorCode.getStatus()).body(response);
     }
+
+    
     @ExceptionHandler(value = AuthorizationDeniedException.class)
     ResponseEntity<ApiResponse> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
         ErrorCode errorCode = ErrorCode.FORBIDDEN;

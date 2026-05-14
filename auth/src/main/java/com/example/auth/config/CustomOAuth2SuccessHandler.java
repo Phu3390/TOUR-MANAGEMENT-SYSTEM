@@ -15,9 +15,7 @@ import org.springframework.stereotype.Component;
 
 import com.example.auth.dto.response.Auth.AuthResponse;
 import com.example.auth.service.Auth.AuthService;
-import com.example.common.dto.ApiResponse;
 import com.example.common.exception.AppException;
-import com.example.common.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;

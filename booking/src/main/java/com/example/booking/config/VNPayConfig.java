@@ -28,7 +28,6 @@ public class VNPayConfig {
     @Value("${vnpay.api-url}")
     private String apiUrl;
 
-    // Tạo random mã giao dịch
     public static String getRandomNumber(int len) {
         Random rnd = new Random();
         String chars = "0123456789";
@@ -39,7 +38,6 @@ public class VNPayConfig {
         return sb.toString();
     }
 
-    // HMAC SHA512
     public static String hmacSHA512(String key, String data) {
         try {
             Mac hmac512 = Mac.getInstance("HmacSHA512");
@@ -76,12 +74,10 @@ public class VNPayConfig {
 
                 if (fieldValue != null && !fieldValue.isEmpty()) {
 
-                    // HASH DATA: ENCODE VALUE
                     hashData.append(fieldName)
                             .append("=")
                             .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
 
-                    // QUERY: ENCODE
                     query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()))
                             .append("=")
                             .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
